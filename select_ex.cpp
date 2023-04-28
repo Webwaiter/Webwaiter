@@ -76,7 +76,7 @@ int main(int argc, char * argv[]) {
   if (serv_sock == -1) {
     perror("error : failed socket()");
   }
-
+  fcntl(serv_sock, F_SETFL, O_NONBLOCK);
   memset( & serv_addr, 0, sizeof(serv_addr)); // 메모리 초기화
   serv_addr.sin_family = AF_INET; // 주소 체계 저장
   serv_addr.sin_port = htons(atoi(argv[1])); // 인자로 받은 port 번호
@@ -125,23 +125,20 @@ int main(int argc, char * argv[]) {
 
           // queue에서 연결 요청 하나씩 꺼내서 해당 client와 server socket 연결
           clnt_sock = accept(serv_sock, (struct sockaddr * ) & clnt_addr, & addr_size);
+          fcntl(clnt_sock, F_SETFL, O_NONBLOCK);
           FD_SET(clnt_sock, & reads);
           if (fd_max < clnt_sock)
             // loop 돌아야 하므로 fd 큰쪽으로 맞춤
             fd_max = clnt_sock;
           printf("connected client : %d \n", clnt_sock);
         } else {
-          str_len = read(i, buf, BUF_SIZE); // 데이터 수신
+          str_len = recv(i, buf, BUF_SIZE, 0); // 데이터 수신
           if (str_len <= 0) {
             FD_CLR(i, &reads);
             close(i);
             printf("close client : %d \n", i);
-          }
-            else {
-            char htmlbuf[100000];
-            int htmlfd = open("simple.html", O_RDONLY);
-            int htmlrd = read(htmlfd, htmlbuf, 100000);
-            send(i, htmlbuf, htmlrd, 0);
+          } else {
+            send(i, buf, str_len, 0);
           }
         }
       }

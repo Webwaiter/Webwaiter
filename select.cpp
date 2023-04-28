@@ -29,7 +29,7 @@ int handShake(int port, struct sockaddr_in &server_addr, int &server_fd) {
     return 0;
   }
 
-  if (listen(server_fd, 1) == -1) {
+  if (listen(server_fd, 5) == -1) {
     return 0;
   }
   return 1;
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
   FD_ZERO(&read_fds);
   FD_ZERO(&write_fds);
   FD_SET(server_fd, &read_fds);
-  FD_SET(server_fd, &write_fds);
+  // FD_SET(server_fd, &write_fds);
 
   fd_set read_copy_fds;
   fd_set write_copy_fds;
@@ -99,7 +99,8 @@ int main(int argc, char** argv) {
           if (rd <= 0) {
             cout << i << '\n';
             FD_CLR(i, &read_fds);
-            // close(i);
+            FD_CLR(i, &write_fds);
+            close(i);
           } else
             send(i, buf, rd, 0);
           // else {
