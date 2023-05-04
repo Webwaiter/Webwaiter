@@ -5,7 +5,7 @@
 
 #include <vector>
 
-#include "src/Client.hpp"
+#include "src/Connection.hpp"
 #include "src/Config.hpp"
 #include "src/Kqueue.hpp"
 
@@ -13,11 +13,15 @@ class Server {
  public:
   Server(const Config &config, const std::vector<int> &listen_sockets);
   void run();
+  void setEvent(int regist_fd, int16_t filter, uint16_t flag, uint32_t fflags, intptr_t data, void *udata);
 
  private:
-  void acceptClient(std::vector<Client> &clients);
-  void receiveRequestMessage(Client &client);
-  void sendResponseMessage(Client &client);
+  void acceptClient(std::map<int, Connection> &connections, int listen_socket);
+  void receiveRequestMessage(Connection &Connection);
+  void sendResponseMessage(Connection &Connection);
+
+  bool isListenSocketEvent(int catch_fd);
+  void sendStaticMessage(void);
 
 
   std::vector<int> listen_sockets_;
