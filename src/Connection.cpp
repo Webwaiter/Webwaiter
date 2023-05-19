@@ -2,6 +2,8 @@
 
 #include "src/Connection.hpp"
 
+#include <unistd.h>
+
 #include <string>
 
 #include "src/Server.hpp"
@@ -34,7 +36,7 @@ bool Connection::hasWorkToDo(Server &s) {
       state_ = RESPONSE;
       break;
     case RESPONSE:
-      s.setEvent(connection_socket_, EVFILT_WRITE, EV_ADD | EV_DISABLE, NULL, NULL);
+      s.setEvent(connection_socket_, EVFILT_WRITE, EV_ADD | EV_DISABLE, NULL, NULL, NULL);
       state_ = READY;
       return false;
   }
@@ -50,9 +52,26 @@ int Connection::parseRequestMessage() {
 }
 
 int Connection::handleRequest() {
+  if (request_message_.getMethod() == "GET") {
+    response_message_ = ResponseMessage(request_message_);
+    response_message_.readContent(request_message_);
+  }
   return 1;
 }
 
 int Connection::makeResponseMessage() {
+  response_message_.generateMessage();
   return 1;
+}
+
+void Connection::writeHandler(int fd) {
+  char *buf;
+  size_t size; // string.size()
+  ssize_t written; 
+
+  // matching string
+  ssize_t ret = write(fd, buf + written, size - written);
+  // response, request written update
+  // written_ += ret;
+  // disable write event
 }

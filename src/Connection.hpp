@@ -6,6 +6,7 @@
 #include <string>
 
 #include "src/RequestMessage.hpp"
+#include "src/ResponseMessage.hpp"
 #include "src/Server.hpp"
 
 class Connection {
@@ -14,6 +15,7 @@ class Connection {
   int getConnectionSocket();
   void appendBuffer(std::string &buf);
   bool hasWorkToDo(Server &s);
+  void writeHandler(int fd);
 
  private:
   int parseRequestMessage();
@@ -27,9 +29,10 @@ class Connection {
     RESPONSE
   };
 
-  RequestMessage request_message_;
   int connection_socket_;
-  std::string response_message_;
+  char read_buf_[8096];
+  RequestMessage request_message_;
+  ResponseMessage response_message_;
   State state_;
 };
 
