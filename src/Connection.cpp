@@ -10,7 +10,7 @@
 
 Connection::Connection(int connection_socket) : connection_socket_(connection_socket), buffer_() {}
 
-int Connection::getConnectionSocket() {
+int Connection::getConnectionSocket() const {
   return connection_socket_;
 }
 
@@ -74,4 +74,8 @@ void Connection::writeHandler(int fd) {
   // response, request written update
   // written_ += ret;
   // disable write event
+}
+
+char *Connection::getReadBuffer() {
+  return read_buffer_;
 }

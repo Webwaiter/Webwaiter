@@ -12,7 +12,8 @@
 class Connection {
  public:
   Connection(int connection_socket);
-  int getConnectionSocket();
+  int getConnectionSocket() const;
+  char *getReadBuffer();
   void appendBuffer(std::string &buf);
   bool hasWorkToDo(Server &s);
   void writeHandler(int fd);
@@ -30,7 +31,7 @@ class Connection {
   };
 
   int connection_socket_;
-  char read_buf_[8096];
+  char read_buffer_[8096];
   RequestMessage request_message_;
   ResponseMessage response_message_;
   State state_;
