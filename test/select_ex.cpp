@@ -130,13 +130,13 @@ int main(int argc, char * argv[]) {
           if (fd_max < clnt_sock)
             // loop 돌아야 하므로 fd 큰쪽으로 맞춤
             fd_max = clnt_sock;
-          printf("connected client : %d \n", clnt_sock);
+          printf("connected Connection : %d \n", clnt_sock);
         } else {
           str_len = recv(i, buf, BUF_SIZE, 0); // 데이터 수신
           if (str_len <= 0) {
             FD_CLR(i, &reads);
             close(i);
-            printf("close client : %d \n", i);
+            printf("close Connection : %d \n", i);
           } else {
             send(i, buf, str_len, 0);
           }

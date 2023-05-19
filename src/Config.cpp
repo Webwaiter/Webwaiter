@@ -8,4 +8,6 @@ Config::Config(const char *file) {
 
 void Config::parseConfig(const char *file) {
   ports_.push_back(4242);
+  root_ = "./docs/html";
+  server_name_ = "webwaiter";
 }

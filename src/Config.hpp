@@ -5,6 +5,7 @@
 
 #include <netinet/in.h>
 
+#include <string>
 #include <vector>
 
 struct Config {
@@ -12,6 +13,8 @@ struct Config {
   void parseConfig(const char *file);
   
   std::vector<in_port_t> ports_;
+  std::string server_name_;
+  std::string root_;
 };
 
 #endif  // SRC_CONFIG_HPP_

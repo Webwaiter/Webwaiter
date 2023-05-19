@@ -8,11 +8,18 @@
 
 class RequestMessage {
  public:
+  std::string getMethod(void) const;
   void append(std::string &buf);
   int parse();
 
  private:
-  std::string buffer_;
+  enum ParseState {
+    kReady,
+    kParse,
+  };
+  
+  ssize_t written_;
+  std::string leftover_;
   std::string method_;
   std::string uri_;
   std::string protocol_;

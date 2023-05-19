@@ -40,7 +40,6 @@ int main(int argc, char** argv) {
   if (argc != 2) {
     return 1;
   }
-  // struct timespec timeout = {1, 0};
 
   struct sockaddr_in server_addr = sockaddr_in();
   int server_fd;
@@ -52,10 +51,8 @@ int main(int argc, char** argv) {
   EV_SET(&event_register, server_fd, EVFILT_READ, EV_ADD, NULL, NULL, NULL);
   kevent(kq, &event_register, 1, NULL, 0, NULL);
 
-  // EV_SET(&event, client_fd, EVFILT_WRITE, EV_ADD, NULL, NULL, NULL);
-  // kevent(kq, &event, 1, NULL, NULL, &timeout);
   struct kevent event_list[10];
-  char buf[10000];
+  char buf[1];
   while (1) {
     int detected_cnt = kevent(kq, NULL, 0, event_list, 10, NULL);
     for (int i = 0; i < detected_cnt; ++i) {
@@ -64,19 +61,33 @@ int main(int argc, char** argv) {
         if (client_fd == -1) {
           continue;
         }
-        cout << "conneceted client :" << client_fd << '\n';
+        cout << "conneceted Connection :" << client_fd << '\n';
         fcntl(client_fd, F_SETFL, O_NONBLOCK);
         EV_SET(&event_register, client_fd, EVFILT_READ, EV_ADD | EV_ENABLE, NULL, NULL, NULL);
         kevent(kq, &event_register, 1, NULL, 0, NULL);
       } else if(event_list[i].filter == EVFILT_READ) {
-        int rd = recv(event_list[i].ident, buf, event_list[i].data, 0);
+        int rd = recv(event_list[i].ident, buf, sizeof(buf), 0);
         buf[rd] = '\0';
         cout << "1. read length : " << event_list[i].data << '\n';
-        if (rd <= 0) {
-          cout << "3. closed client :" << event_list[i].ident << '\n';
+        cout << "buf : " << static_cast<int>(buf[0]) << " " << '\n';
+        if (rd == 0) {
+          cout << "3. closed Connection :" << event_list[i].ident << '\n';
+          EV_SET(&event_register, event_list[i].ident, EVFILT_WRITE, EV_ADD | EV_ENABLE, NULL, NULL, NULL);
+          kevent(kq, &event_register, 1, NULL, 0, NULL);
         }
-        EV_SET(&event_register, event_list[i].ident, EVFILT_WRITE, EV_ADD | EV_ENABLE, NULL, NULL, NULL);
-        kevent(kq, &event_register, 1, NULL, 0, NULL);
+        /*
+        1. 읽는다
+        2. 읽은 버퍼에 \cr\lf가 있는지 확인한다
+        3. 없다면 임시 변수에 붙인다
+        4, 있다면 파싱한다.
+        */
+       /*
+       get http 1.1
+       a : b
+       c : d
+       e : f
+       a :
+       */
       } else if(event_list[i].filter == EVFILT_WRITE) {
         cout << "2. write" << '\n';
         cout << buf << '\n';

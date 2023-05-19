@@ -133,11 +133,11 @@ void change_events(vector<struct kevent>& change_list, uintptr_t ident, int16_t 
     change_list.push_back(temp_event);
 }
 
-void disconnect_client(int client_fd, map<int, string>& clients)
+void disconnect_client(int client_fd, map<int, string>& connections)
 {
-    cout << "client disconnected: " << client_fd << endl;
+    cout << "Connection disconnected: " << client_fd << endl;
     close(client_fd);
-    clients.erase(client_fd);
+    connections.erase(client_fd);
 }
 
 int main()
@@ -166,7 +166,7 @@ int main()
         exit_with_perror("kqueue() error\n" + string(strerror(errno)));
 
 
-    map<int, string> clients; // map for client socket:data
+    map<int, string> connections; // map for Connection socket:data
     vector<struct kevent> change_list; // kevent vector for changelist
     struct kevent event_list[8]; // kevent array for eventlist
 
@@ -197,64 +197,64 @@ int main()
                     exit_with_perror("server socket error");
                 else
                 {
-                    cerr << "client socket error" << endl;
-                    disconnect_client(curr_event->ident, clients);
+                    cerr << "Connection socket error" << endl;
+                    disconnect_client(curr_event->ident, connections);
                 }
             }
             else if (curr_event->filter == EVFILT_READ)
             {
                 if (curr_event->ident == server_socket)
                 {
-                    /* accept new client */
+                    /* accept new Connection */
                     int client_socket;
                     if ((client_socket = accept(server_socket, NULL, NULL)) == -1)
                         exit_with_perror("accept() error\n" + string(strerror(errno)));
-                    cout << "accept new client: " << client_socket << endl;
+                    cout << "accept new Connection: " << client_socket << endl;
                     fcntl(client_socket, F_SETFL, O_NONBLOCK);
 
-                    /* add event for client socket - add read && write event */
+                    /* add event for Connection socket - add read && write event */
                     change_events(change_list, client_socket, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
                     change_events(change_list, client_socket, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, NULL);
-                    clients[client_socket] = "";
+                    connections[client_socket] = "";
                 }
-                else if (clients.find(curr_event->ident)!= clients.end())
+                else if (connections.find(curr_event->ident)!= connections.end())
                 {
-                    /* read data from client */
+                    /* read data from Connection */
                     char buf[1024];
                     int n = read(curr_event->ident, buf, sizeof(buf));
 
                     if (n <= 0)
                     {
                         if (n < 0)
-                            cerr << "client read error!" << endl;
+                            cerr << "Connection read error!" << endl;
                         cerr << "read is zero" << endl;
-                        disconnect_client(curr_event->ident, clients);
+                        disconnect_client(curr_event->ident, connections);
                     }
                     else
                     {
                         buf[n] = '\0';
-                        clients[curr_event->ident] += buf;
-                        cout << "received data from " << curr_event->ident << ": " << clients[curr_event->ident] << endl;
+                        connections[curr_event->ident] += buf;
+                        cout << "received data from " << curr_event->ident << ": " << connections[curr_event->ident] << endl;
                     }
                 }
             }
             else if (curr_event->filter == EVFILT_WRITE)
             {
-                /* send data to client */
-                map<int, string>::iterator it = clients.find(curr_event->ident);
-                if (it != clients.end())
+                /* send data to Connection */
+                map<int, string>::iterator it = connections.find(curr_event->ident);
+                if (it != connections.end())
                 {
-                    if (clients[curr_event->ident] != "")
+                    if (connections[curr_event->ident] != "")
                     {
                         int n;
-                        if ((n = write(curr_event->ident, clients[curr_event->ident].c_str(),
-                                        clients[curr_event->ident].size()) == -1))
+                        if ((n = write(curr_event->ident, connections[curr_event->ident].c_str(),
+                                        connections[curr_event->ident].size()) == -1))
                         {
-                            cerr << "client write error!" << endl;
-                            disconnect_client(curr_event->ident, clients);  
+                            cerr << "Connection write error!" << endl;
+                            disconnect_client(curr_event->ident, connections);  
                         }
                         else
-                            clients[curr_event->ident].clear();
+                            connections[curr_event->ident].clear();
                     }
                 }
             }
