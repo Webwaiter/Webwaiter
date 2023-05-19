@@ -1,6 +1,7 @@
 // Copyright 2023 ean, hanbkim, jiyunpar
 
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/event.h>
 
 #include <cstdio>
@@ -22,38 +23,30 @@ void Server::setEvent(int regist_fd, int16_t filter, uint16_t flag, uint32_t ffl
   kevent(kqueue_.fd_, &kqueue_.event_register_, 1, NULL, 0, NULL);
 }
 
-void Server::acceptClient(std::map<int, Connection> &connections, int listen_socket) {
+Connection Server::acceptClient(int listen_socket) {
   int connection_socket = accept(listen_socket, NULL, NULL);
   if (connection_socket == -1) {
-    std::perror("accept() error");
-    return;
+    throw 1;
   }
-  connections[connection_socket] = Connection(connection_socket);
   fcntl(connection_socket, F_SETFL, O_NONBLOCK);
-  setEvent(connection_socket, EVFILT_READ, EV_ADD, NULL, NULL);
+  setEvent(connection_socket, EVFILT_READ, EV_ADD, NULL, 0, NULL);
+  return Connection(connection_socket);
 }
 
-void Server::receiveRequestMessage(Connection &Connection) { 
-  static const int kBufferSize = 8192;
-  char buf[kBufferSize];
-  int fd = Connection.getConnectionSocket();
-  int rd = recv(fd, buf, kBufferSize, 0);
-  if (rd <= 0) {
-    return;
-  }
-  buf[rd] = '\0';
+// void Server::receiveRequestMessage(Connection &connection) { 
+//   int fd = connection.getConnectionSocket();
+//   int rd = read(fd, buf, kBufferSize);
+//   if (rd <= 0) {
+//     return;
+//   }
+//   buf[rd] = '\0';
 
-  Connection.appendBuffer(buf);
-}
+//   connection.appendBuffer(buf);
+// }
 
-void Server::sendResponseMessage(Connection &Connection) {
-  if (isCGI()) {
-    // cgi.runCGI();
-    runCGI();
-  } else {
-    sendStaticMessage();
-  }
-}
+// void Server::sendResponseMessage(Connection &connection) {
+//   connection.writeHandler();
+// }
 
 bool Server::isListenSocketEvent(int catch_fd) {
   for (int i = 0; i < listen_sockets_.size(); ++i) {
@@ -64,7 +57,7 @@ bool Server::isListenSocketEvent(int catch_fd) {
 }
 
 void Server::run() {
-  std::map<int, Connection> connections;
+  std::map<int, Connection&> connections;
   std::queue<Connection&> work_queue;
 
   while (1) {
@@ -74,12 +67,19 @@ void Server::run() {
       int filter = kqueue_.event_list_[i].filter;
 
       if (isListenSocketEvent(fd)) {
-        acceptClient(connections, fd);
-      } else if(filter == EVFILT_READ) {
-        receiveRequestMessage(connections[fd]);
+        try {
+        connections[fd] = acceptClient(fd);
         work_queue.push(connections[fd]);
+        } catch (int &e) {
+        std::perror("accept() error");
+        }
+      } else if(filter == EVFILT_READ) {
+        char *buf = connections[fd].getReadBuffer();
+        read(fd, buf, sizeof(buf));
+        setEvent(fd, EVFILT_READ, EV_DISABLE, NULL, 0, NULL);
       } else if(filter == EVFILT_WRITE) {
-        sendResponseMessage(connections[fd]);
+        connections[fd].writeHandler(fd);
+        setEvent(fd, EVFILT_WRITE, EV_DISABLE, NULL, 0, NULL);
       }
     }
     size_t queue_size = work_queue.size();

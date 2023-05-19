@@ -16,7 +16,7 @@ class Server {
   void setEvent(int regist_fd, int16_t filter, uint16_t flag, uint32_t fflags, intptr_t data, void *udata);
 
  private:
-  void acceptClient(std::map<int, Connection> &connections, int listen_socket);
+  Connection Server::acceptClient(int listen_socket);
   void receiveRequestMessage(Connection &Connection);
   void sendResponseMessage(Connection &Connection);
 
