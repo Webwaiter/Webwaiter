@@ -18,7 +18,7 @@ int Connection::getConnectionSocket() const {
 
 void Connection::parsingRequestMessage() {
   // 1. 파싱
-  request_message_.parse();
+  request_message_.parse(read_buffer_);
 
   
   if (isCGIExtension) {
