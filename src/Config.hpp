@@ -5,17 +5,20 @@
 
 #include <netinet/in.h>
 
+#include <fstream>
 #include <string>
 #include <vector>
 #include <map>
 
 #include "src/ServerBlock.hpp"
+#include "src/LocationBlock.hpp"
 
 class Config {
  public:
-  explicit Config(const char *file);
+  explicit Config(const char *file_path); 
 
  private:
+  void parseConfigFile(const char *file_path);
   std::string server_program_name_;
   std::string http_version_;
   int client_body_size_;
