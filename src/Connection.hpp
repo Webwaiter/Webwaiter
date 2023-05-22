@@ -3,10 +3,12 @@
 #ifndef SRC_CONNECTION_HPP_
 #define SRC_CONNECTION_HPP_
 
+#include <queue>
 #include <string>
 
 #include "src/RequestMessage.hpp"
 #include "src/ResponseMessage.hpp"
+#include "src/ReturnState.hpp"
 #include "src/Server.hpp"
 
 class Connection {
@@ -14,20 +16,25 @@ class Connection {
   Connection(int connection_socket);
   int getConnectionSocket() const;
   char *getReadBuffer();
-  void appendBuffer(std::string &buf);
-  bool hasWorkToDo(Server &s);
+  ReturnState work();
+  bool checkReadSuccess();
+  bool checkTimeOut();
+  void parsingRequestMessage();
+  void executeCGIProcess();
+  void openStaticPage();
+  void writingToPipe();
   void writeHandler(int fd);
 
  private:
-  int parseRequestMessage();
-  int handleRequest();
-  int makeResponseMessage();
-
   enum State {
-    READY,
-    PARSE,
-    HANDLE,
-    RESPONSE
+    PARSING_REQUEST_MESSAGE,
+    HANDLING_STATIC_PAGE,
+    HANDLING_DYNAMIC_PAGE_HEADER,
+    HANDLING_DYNAMIC_PAGE_BODY,
+    WRITING_TO_PIPE,
+    WRITING_STATIC_PAGE,
+    WRITING_DYNAMIC_PAGE_HEADER,
+    WRITING_DYNAMIC_PAGE_BODY,
   };
 
   int connection_socket_;

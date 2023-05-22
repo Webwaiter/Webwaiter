@@ -19,3 +19,11 @@ int RequestMessage::parse() {
   body_ = "";
   return 1;
 }
+
+bool RequestMessage::writeDone() {
+  if (body_.size() == written_) {
+    written_ = 0;
+    return true;
+  }
+  return false;
+}

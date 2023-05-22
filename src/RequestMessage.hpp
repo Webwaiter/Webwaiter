@@ -11,6 +11,7 @@ class RequestMessage {
   std::string getMethod(void) const;
   void append(std::string &buf);
   int parse();
+  bool writeDone();
 
  private:
   enum ParseState {

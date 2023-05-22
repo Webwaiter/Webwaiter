@@ -8,6 +8,7 @@
 #include <map>
 #include <queue>
 
+#include "src/ReturnState.hpp"
 #include "src/Server.hpp"
 
 Server::Server(const Config &config, const std::vector<int> &listen_sockets) : listen_sockets_(listen_sockets), kqueue_() {
@@ -68,10 +69,10 @@ void Server::run() {
 
       if (isListenSocketEvent(fd)) {
         try {
-        connections[fd] = acceptClient(fd);
-        work_queue.push(connections[fd]);
+          connections[fd] = acceptClient(fd);
+          work_queue.push(connections[fd]);
         } catch (int &e) {
-        std::perror("accept() error");
+          std::perror("accept() error");
         }
       } else if(filter == EVFILT_READ) {
         char *buf = connections[fd].getReadBuffer();
@@ -82,14 +83,14 @@ void Server::run() {
         setEvent(fd, EVFILT_WRITE, EV_DISABLE, NULL, 0, NULL);
       }
     }
-    size_t queue_size = work_queue.size();
-    while (queue_size) {
-      Connection& c = work_queue.front();
-      if (c.hasWorkToDo(*this)) {
-        work_queue.push(c);
-      }
+    for (size_t queue_size = work_queue.size(); queue_size > 0; --queue_size) {
+      Connection &connection = work_queue.front();
       work_queue.pop();
-      --queue_size;
+      if (connection.work() == CONNECTION_CLOSE) {
+        //pop fd - connection pair from map
+      } else {
+        work_queue.push(connection);
+      }
     }
   }
 }

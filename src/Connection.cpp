@@ -4,64 +4,65 @@
 
 #include <unistd.h>
 
+#include <queue>
 #include <string>
 
+#include "src/ReturnState.hpp"
 #include "src/Server.hpp"
 
-Connection::Connection(int connection_socket) : connection_socket_(connection_socket), buffer_() {}
+Connection::Connection(int connection_socket) : connection_socket_(connection_socket), read_buffer_() {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
 }
 
-bool Connection::hasWorkToDo(Server &s) {
-  int ret;
+void Connection::parsingRequestMessage() {
+  // 1. 파싱
+  request_message_.parse();
+
+  
+  if (isCGIExtension) {
+    executeCGIProcess();
+  } else {
+    openStaticPage();
+  }
+  
+}
+
+void Connection::writingToPipe() {
+  if (request_message_.writeDone()) {
+    state_ = HANDLING_DYNAMIC_PAGE_HEADER;
+  }
+}
+
+ReturnState Connection::work(void) {
+  if (checkReadSuccess() == false) {
+    if (checkTimeOut()){
+      connectionClose();
+      return CONNECTION_CLOSE;
+    }
+  }
   switch (state_) {
-    case READY:
-      ret = parseRequestMessage();
-      if (ret == -1)
-        break;
-      state_ = PARSE;
+    case PARSING_REQUEST_MESSAGE:
+      parsingRequestMessage();
       break;
-    case PARSE:
-      ret = handleRequest();
-      if (ret == -1)
-        break;
-      state_ = HANDLE;
+    case HANDLING_STATIC_PAGE:
       break;
-    case HANDLE:
-      ret = makeResponseMessage();
-      if (ret == -1)
-        break;
-      state_ = RESPONSE;
+    case HANDLING_DYNAMIC_PAGE_HEADER:
       break;
-    case RESPONSE:
-      s.setEvent(connection_socket_, EVFILT_WRITE, EV_ADD | EV_DISABLE, NULL, NULL, NULL);
-      state_ = READY;
-      return false;
+    case HANDLING_DYNAMIC_PAGE_BODY:
+      break;
+    case WRITING_TO_PIPE:
+      writingToPipe();
+      break;
+    case WRITING_STATIC_PAGE:
+      break;
+    case WRITING_DYNAMIC_PAGE_HEADER:
+      break;
+    case WRITING_DYNAMIC_PAGE_BODY:
+      break;
   }
-  return true;
-}
-
-void Connection::appendBuffer(std::string &buf) {
-  request_message_.append(buf); 
-}
-
-int Connection::parseRequestMessage() {
-  return request_message_.parse();
-}
-
-int Connection::handleRequest() {
-  if (request_message_.getMethod() == "GET") {
-    response_message_ = ResponseMessage(request_message_);
-    response_message_.readContent(request_message_);
-  }
-  return 1;
-}
-
-int Connection::makeResponseMessage() {
-  response_message_.generateMessage();
-  return 1;
+  return SUCCESS;
 }
 
 void Connection::writeHandler(int fd) {

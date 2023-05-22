@@ -5,6 +5,7 @@
 
 class ResponseMessage {
  public:
+  ResponseMessage();
   ResponseMessage(const RequestMessage &request_message);
   ResponseMessage &operator=(const ResponseMessage &rhs);
   std::string generateMessage() const;
