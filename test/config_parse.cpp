@@ -11,7 +11,16 @@ int main(int argc, char **argv) {
     std::cout << "Usage : ./conf_test [file]\n";
     return 1;
   }
-  Config test(argv[1]);
+  try {
+    Config test(argv[1]);
+    std::cout << "done" << '\n';
+    std::cout << test.getServerProgramName() << '\n';
+    std::cout << test.getHttpVersion() << '\n';
+  }
+  catch (int) {
+    std::cout << "fail to construct class" << '\n';
+  }
+
   
   return 0;
 }
