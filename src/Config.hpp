@@ -5,6 +5,7 @@
 
 #include <netinet/in.h>
 
+#include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -15,15 +16,15 @@
 
 class Config {
  public:
-  explicit Config(const char *file_path); 
+  explicit Config(const char *file_path);
+  std::string getServerProgramName() const;
+  std::string getHttpVersion() const;
 
  private:
   void parseConfigFile(const char *file_path);
   std::string server_program_name_;
   std::string http_version_;
-  int client_body_size_;
-  std::map<std::string, std::string> default_error_pages_;
-  std::vector<ServerBlock&> server_blocks_; 
+  std::vector<ServerBlock*> server_blocks_; 
 };
 
 #endif  // SRC_CONFIG_HPP_
