@@ -8,6 +8,7 @@
 
 class RequestMessage {
  public:
+  RequestMessage();
   std::string getMethod(void) const;
   void appendLeftover(const std::string &buf);
   void parse(const std::string &read_buffer_);
@@ -18,6 +19,7 @@ class RequestMessage {
   size_t parseMethod(const std::string &buffer);
   size_t parseUri(const std::string &buffer);
   size_t parseProtocol(const std::string &buffer);
+  size_t parseHeaderLine(const std::string &buffer);
 
   enum ParseState {
     kMethod,
@@ -31,6 +33,12 @@ class RequestMessage {
   ssize_t written_;
 
   std::string leftover_;
+ public:
+  const std::string &getMethod1() const;
+  const std::string &getUri() const;
+  const std::string &getAProtocol() const;
+  const std::map<std::string, std::string> &getHeaders() const;
+ private:
   std::string method_;
   std::string uri_;
   std::string protocol_;
