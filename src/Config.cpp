@@ -9,7 +9,7 @@ Config::Config(const char *file_path) {
     parseConfigFile(file_path);
   }
   catch(int) {
-    std::cout << "fail" << '\n';
+    throw 1;
   }
 }
 
@@ -26,9 +26,10 @@ void Config::parseConfigFile(const char *file_path) {
   while (!file.eof()) {
     std::string line;
     std::getline(file, line);
-    if (line.find("server {")) {
+    if (line.find("server {") != std::string::npos) {
       // ServerBlock class construct & push_back to vector
-      return;
+      ServerBlock *server = new ServerBlock(file);
+      server_blocks_.push_back(server);
     } else {
       std::vector<std::string> tmp;
       tmp = split(line, " ");
