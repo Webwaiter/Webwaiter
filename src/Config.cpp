@@ -9,7 +9,7 @@ Config::Config(const char *file_path) {
     parseConfigFile(file_path);
   }
   catch(int) {
-    throw 1;
+    throw FAIL;
   }
 }
 
@@ -17,11 +17,9 @@ void Config::parseConfigFile(const char *file_path) {
   std::fstream file;
   int error_flag = 0;
 
-  bool isopen = 1;
   file.open(file_path, std::fstream::in);
-  isopen = file.is_open();
   if (!file.is_open()) {
-    throw 1;
+    throw FAIL;
   }
   while (!file.eof()) {
     std::string line;
@@ -31,13 +29,13 @@ void Config::parseConfigFile(const char *file_path) {
       ServerBlock *server = new ServerBlock(file);
       server_blocks_.push_back(server);
     } else {
-      std::vector<std::string> tmp;
-      tmp = split(line, " ");
-      if (tmp[0] == "program_name") {
-        server_program_name_ = tmp[1];
+      std::vector<std::string> tmp_vec;
+      tmp_vec = split(line, " ");
+      if (tmp_vec[0] == "program_name") {
+        server_program_name_ = tmp_vec[1];
         error_flag |= (1 << 0);
-      } else if (tmp[0] == "http_version") {
-        http_version_ = tmp[1];
+      } else if (tmp_vec[0] == "http_version") {
+        http_version_ = tmp_vec[1];
         error_flag |= (1 << 1);
       }
     }
@@ -53,4 +51,8 @@ std::string Config::getServerProgramName(void) const {
 
 std::string Config::getHttpVersion(void) const {
   return http_version_;
+}
+
+std::vector<ServerBlock*> Config::getServerBlocks(void) const {
+  return server_blocks_;
 }

@@ -12,13 +12,13 @@
 #include <map>
 
 #include "src/ServerBlock.hpp"
-#include "src/LocationBlock.hpp"
 
 class Config {
  public:
   explicit Config(const char *file_path);
-  std::string getServerProgramName() const;
-  std::string getHttpVersion() const;
+  std::string getServerProgramName(void) const;
+  std::string getHttpVersion(void) const;
+  std::vector<ServerBlock*> getServerBlocks(void) const;
 
  private:
   void parseConfigFile(const char *file_path);
