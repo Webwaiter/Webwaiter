@@ -1,5 +1,6 @@
 // Copyright 2023 ean, hanbkim, jiyunpar
 
+#include <sstream>
 #include "src/RequestMessage.hpp"
 
 std::string RequestMessage::getMethod(void) const {
@@ -20,13 +21,16 @@ bool RequestMessage::writeDone() {
 
 void RequestMessage::parse(const std::string &buffer) {
   const std::string merge_buffer = leftover_ + buffer;
+  leftover_.clear();
   size_t read_count = 0;
 
   read_count += parseStartLine(merge_buffer);
-//  parseHeaderLine();
+  /*
+   * skipCrlf() startline이 들어오고 header가 들어오기 전 공백이 들어오면 400 에러를 뱉어야함. 그리고 crlf만 들어온 문자 스킵할 수 있어야 함.
+   */
+  read_count += parseHeaderLine(merge_buffer);
 //  parseBody();
 
-  // 찌꺼기 이어붙이기
   appendLeftover(merge_buffer.c_str() + read_count);
 }
 
@@ -76,6 +80,42 @@ size_t RequestMessage::parseProtocol(const std::string &buffer) {
   return 0;
 }
 
+size_t RequestMessage::parseHeaderLine(std::string &buffer) {
+  // 구분자가 아예 없으면 바로 탈출
+  size_t read_count = 0;
+
+  if (buffer.find("\r\n") == std::string::npos) {
+    return 0;
+  }
+
+  // 헤더 파싱 종료조건
+  if (buffer.find("\r\n\r\n") != std::string::npos) {
+    state_ = kBodyLine;
+  }
+
+  size_t pos = 0;
+  std::string field_line;
+  std::string delimiter("\r\n");
+
+  while ((pos = buffer.find(delimiter)) != std::string::npos) {
+    field_line = buffer.substr(0, pos);
+    // ":" 기준으로 스플릿 후 map에 저장
+    buffer.erase(0, pos + delimiter.length());
+    read_count += pos + delimiter.length();
+  }
+
+  /*
+   * 0. crlf crlf 들어왔으면 헤더 파싱 종료
+   *
+   * 1. crlf 기준으로 1줄
+   * 2. crlf만 들어왔을 때 스킵
+   * 3. ':' 기준으로 split
+   * 4. ':' 가 없거나 :이전에 space가 있으면 틀린 형식
+   *
+   */
+  return 0;
+}
+
 const std::string &RequestMessage::getMethod1() const {
   return method_;
 }
@@ -89,8 +129,3 @@ const std::map<std::string, std::string> &RequestMessage::getHeaders() const {
   return headers_;
 }
 RequestMessage::RequestMessage() : state_(kMethod), written_(0) {}
-
-//size_t RequestMessage::parseHeaderLine(const std::string &buffer)
-//{
-//  return 0;
-//}

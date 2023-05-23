@@ -19,7 +19,7 @@ class RequestMessage {
   size_t parseMethod(const std::string &buffer);
   size_t parseUri(const std::string &buffer);
   size_t parseProtocol(const std::string &buffer);
-  size_t parseHeaderLine(const std::string &buffer);
+  size_t parseHeaderLine(std::string &buffer);
 
   enum ParseState {
     kMethod,

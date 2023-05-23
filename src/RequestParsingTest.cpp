@@ -1,6 +1,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <fstream>
 #include "../src/RequestMessage.hpp"
 #include <iostream>
 
@@ -9,7 +10,7 @@ int main() {
   int fd = open("test", O_RDONLY);
   if (fd <= 0)
     return 0;
-  char buf[8093];
+  char buf[2];
   while (1) {
     int rd = read(fd, buf, sizeof(buf) - 1);
     if (rd == 0)
