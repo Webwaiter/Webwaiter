@@ -34,8 +34,8 @@ void Connection::executeCGIProcess() {
       }
       close(from_cgi[1]);
     }
-    char *cgi_pathname = config.getCGIPath();  // Config& config
-    char **cgi_argv = new char*[kCGIArgc + 1]();  // kCGIArgc
+    char *cgi_pathname = server_config_.getCGIPath(url);  // Config& config
+    char **cgi_argv = new char*[2]();
     cgi_argv[0] = cgi_pathname;
     char **meta_variables = new char*[kMetaVariableCount + 1]();  // kMetaVariableCount
     // close all unused file descriptors
@@ -47,15 +47,14 @@ void Connection::executeCGIProcess() {
   // parent process (server)
   close(to_cgi[0]);
   close(from_cgi[1]);
-  server.setEvent(from_cgi[0], EVFILT_READ, EV_ADD | EV_DISABLE, NULL, 0, NULL);  // PROBLEM!!!!!
-  if (request_message.getMethod() == "POST") {
+  kqueue_.setEvent(from_cgi[0], EVFILT_READ, EV_ADD | EV_DISABLE, NULL, 0, NULL);  // PROBLEM!!!!!
+  if (request_message_.getMethod() == "POST") {
     state_ = WRITING_TO_PIPE;
-    // prepare things to write to CGI
-    server.setEvent(to_cgi[1], EVFILT_WRITE, EV_ADD, NULL, 0, NULL);  // PROBLEM!!!!!
+    kqueue_.setEvent(to_cgi[1], EVFILT_WRITE, EV_ADD, NULL, 0, NULL);  // PROBLEM!!!!!
   } else {
     close(to_cgi[1]);
     state_ = HANDLING_DYNAMIC_PAGE_HEADER;
-    server.setEvent(from_cgi[0], EVFILT_READ, EV_ENABLE, NULL, 0, NULL);  // PROBLEM!!!!!
+    kqueue_.setEvent(from_cgi[0], EVFILT_READ, EV_ENABLE, NULL, 0, NULL);  // PROBLEM!!!!!
   }
   return 0;
 }
