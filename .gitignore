@@ -1,0 +1,45 @@
+# Compiled object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Executables
+*.exe
+*.out
+*.app
+
+# OS or Editor specific files
+.DS_Store
+Thumbs.db
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Dependency directories
+bin/
+build/
+lib/
+
+# Build generated files
+Makefile
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+
+# Visual Studio Code C++ extension
+.vscode/c_cpp_properties.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
