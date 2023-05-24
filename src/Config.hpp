@@ -18,7 +18,7 @@ class Config {
   explicit Config(const char *file_path);
   std::string getServerProgramName(void) const;
   std::string getHttpVersion(void) const;
-  std::vector<ServerBlock*> getServerBlocks(void) const;
+  std::vector<ServerBlock> getServerBlocks(void) const;
 
  private:
   void parseConfigFile(const char *file_path);

@@ -25,6 +25,9 @@ void Config::parseConfigFile(const char *file_path) {
     std::string line;
     std::getline(file, line);
     std::vector<std::string> tmp_vec = split(line, " \t");
+    if (line == "") {
+      continue;
+    }
     if (line.find("server {") != std::string::npos) {
       // ServerBlock class construct & push_back to vector
       server_blocks_.push_back(ServerBlock(file));
@@ -51,6 +54,6 @@ std::string Config::getHttpVersion(void) const {
   return http_version_;
 }
 
-std::vector<ServerBlock*> Config::getServerBlocks(void) const {
+std::vector<ServerBlock> Config::getServerBlocks(void) const {
   return server_blocks_;
 }

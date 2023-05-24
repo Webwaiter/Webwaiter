@@ -22,6 +22,9 @@ void ServerBlock::parseServerBlock(std::fstream &file) {
     std::string tmp = skipCharset(line, " \t");
     std::vector<std::string> tmp_vec = split(tmp, " \t");
     //TODO: eof when not paired brace -> error
+    if (tmp == "") {
+      continue;
+    }
     if (tmp == "}") {
       if (brace.top() == "{") {
         brace.pop();
