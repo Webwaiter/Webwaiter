@@ -28,7 +28,7 @@ class ServerBlock {
   std::string server_ip_;
   int server_port_;
   std::string server_name_;
-  std::vector<LocationBlock*> location_blocks_;
+  std::vector<LocationBlock> location_blocks_;
 };
 
 #endif  // SRC_SERVERBLOCK_HPP_

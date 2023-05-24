@@ -20,7 +20,7 @@ void LocationBlock::parseLocationBlock(std::fstream &file) {
     std::string line;
     std::getline(file, line);
     std::string tmp = skipCharset(line, " \t");
-    std::vector<std::string> tmp_vec = split(tmp, " ");
+    std::vector<std::string> tmp_vec = split(tmp, " \t");
     // check error_case 
     if (tmp == "}") {
       if (brace.top() == "{") {

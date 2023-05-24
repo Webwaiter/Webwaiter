@@ -24,13 +24,11 @@ void Config::parseConfigFile(const char *file_path) {
   while (!file.eof()) {
     std::string line;
     std::getline(file, line);
+    std::vector<std::string> tmp_vec = split(line, " \t");
     if (line.find("server {") != std::string::npos) {
       // ServerBlock class construct & push_back to vector
-      ServerBlock *server = new ServerBlock(file);
-      server_blocks_.push_back(server);
+      server_blocks_.push_back(ServerBlock(file));
     } else {
-      std::vector<std::string> tmp_vec;
-      tmp_vec = split(line, " ");
       if (tmp_vec[0] == "program_name") {
         server_program_name_ = tmp_vec[1];
         error_flag |= (1 << 0);

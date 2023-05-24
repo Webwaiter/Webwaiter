@@ -24,7 +24,7 @@ class Config {
   void parseConfigFile(const char *file_path);
   std::string server_program_name_;
   std::string http_version_;
-  std::vector<ServerBlock*> server_blocks_; 
+  std::vector<ServerBlock> server_blocks_; 
 };
 
 #endif  // SRC_CONFIG_HPP_

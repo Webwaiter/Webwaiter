@@ -3,17 +3,23 @@
 #include <vector>
 #include <string>
 
-std::vector<std::string> split(std::string input, std::string delimiter) {
-	std::vector<std::string> ret;
-	std::string token = "";
-	size_t pos;
-	while ((pos = input.find(delimiter)) != std::string::npos) {
-		token = input.substr(0, pos);
-		ret.push_back(token);
-		input.erase(0, pos + delimiter.size());
-	}
-	ret.push_back(input);
-	return ret;
+std::vector<std::string> split(std::string input, std::string delimiter_set) {
+    std::vector<std::string> result;
+    std::string::size_type start = 0;
+    std::string::size_type end = input.find_first_of(delimiter_set);
+    while (end != std::string::npos) {
+        if (end != start) {
+            std::string token = input.substr(start, end - start);
+            result.push_back(token);
+        }
+        start = end + 1;
+        end = input.find_first_of(delimiter_set, start);
+    }
+    if (start != input.length()) {
+        std::string token = input.substr(start);
+        result.push_back(token);
+    }
+    return result;
 }
 
 std::string skipCharset(std::string input, std::string charset) {

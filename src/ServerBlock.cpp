@@ -20,16 +20,15 @@ void ServerBlock::parseServerBlock(std::fstream &file) {
     std::string line;
     std::getline(file, line);
     std::string tmp = skipCharset(line, " \t");
-    std::vector<std::string> tmp_vec = split(tmp, " ");
-    // eof when not paired brace -> error
+    std::vector<std::string> tmp_vec = split(tmp, " \t");
+    //TODO: eof when not paired brace -> error
     if (tmp == "}") {
       if (brace.top() == "{") {
         brace.pop();
       }
     } else if (tmp.find("location") != std::string::npos) {
       // url parsing 불가시 error -> tmp_vec size로 파
-      LocationBlock *location = new LocationBlock(file, tmp_vec[1]);
-      location_blocks_.push_back(location);
+      location_blocks_.push_back(LocationBlock(file, tmp_vec[1]));
       error_flag |= (1 << 5);
     } else {
       if (tmp_vec[0] == "default_error_page_400") {
