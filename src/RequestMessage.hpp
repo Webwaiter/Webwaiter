@@ -10,16 +10,16 @@ class RequestMessage {
  public:
   RequestMessage();
   std::string getMethod(void) const;
-  void appendLeftover(const std::string &buf);
+  void appendLeftover(const std::string &buffer, size_t read_count);
   void parse(const std::string &read_buffer_);
   bool writeDone();
 
  private:
-  size_t parseStartLine(const std::string &buffer);
-  size_t parseMethod(const std::string &buffer);
-  size_t parseUri(const std::string &buffer);
-  size_t parseProtocol(const std::string &buffer);
-  size_t parseHeaderLine(std::string &buffer);
+  void parseStartLine(std::string &buffer, size_t &read_count);
+  void parseMethod(std::string &buffer, size_t &read_count);
+  void parseUri(std::string &buffer, size_t &read_count);
+  void parseProtocol(std::string &buffer, size_t &read_count);
+  void parseHeaderLine(std::string &buffer, size_t &read_count);
 
   enum ParseState {
     kMethod,

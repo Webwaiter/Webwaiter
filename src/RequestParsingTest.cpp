@@ -20,5 +20,9 @@ int main() {
     std::cout << "METHOD : " << request_message.getMethod1() << '\n';
     std::cout << "URI : " << request_message.getUri() << '\n';
     std::cout << "PROTOCOl : " << request_message.getAProtocol() << '\n';
+    auto map(request_message.getHeaders());
+    for(auto i = map.begin(); i != map.end(); ++i) {
+      std::cout << "[" << i->first << "][" << i->second << "]\n";
+    }
   }
 }
