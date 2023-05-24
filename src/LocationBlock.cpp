@@ -58,8 +58,9 @@ void LocationBlock::parseLocationBlock(std::fstream &file) {
         redirection_ = tmp_vec[1];
         error_flag |=  (1 << 6);
       }
-  }
-  if (error_flag != 31 && error_flag != 63) {
-    throw FAIL;	
+    }
+    if (error_flag != 31 && error_flag != 63) {
+      throw FAIL;	
+    }
   }
 }
