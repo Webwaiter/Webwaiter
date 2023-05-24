@@ -5,12 +5,16 @@
 
 #include <sys/event.h>
 
-#include <vector>
-
 struct Kqueue {
+  Kqueue() : fd_(kqueue()) {}
+
+  void setEvent(int regist_fd, int16_t filter, uint16_t flag, uint32_t fflags, intptr_t data, void *udata) {
+    struct kevent event_register;
+    EV_SET(&event_register, regist_fd, filter, flag, fflags, data, udata);
+    kevent(fd_, &event_register, 1, NULL, 0, NULL);
+  }
+
   int fd_;
-  struct kevent event_register_;
-  struct kevent event_list_[10];
 };
 
 #endif  // SRC_KQUEUE_HPP_

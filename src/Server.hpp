@@ -13,10 +13,9 @@ class Server {
  public:
   Server(const Config &config, const std::vector<int> &listen_sockets);
   void run();
-  void setEvent(int regist_fd, int16_t filter, uint16_t flag, uint32_t fflags, intptr_t data, void *udata);
 
  private:
-  Connection Server::acceptClient(int listen_socket);
+  const Connection& acceptClient(int listen_socket, std::vector<Connection>& v);
   void receiveRequestMessage(Connection &Connection);
   void sendResponseMessage(Connection &Connection);
 
@@ -24,8 +23,8 @@ class Server {
   void sendStaticMessage(void);
 
 
-  std::vector<int> listen_sockets_;
   Config config_;
+  std::vector<int> listen_sockets_;
   Kqueue kqueue_;
 };
 
