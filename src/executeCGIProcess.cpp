@@ -43,11 +43,19 @@ void Connection::executeCGIProcess() {
     //   cout << "execve error" << endl;
     //   return 1;
     // }
-  } else {  // parent process (server)
-    close(from_cgi[1]);
-    // copy from_cgi[0] to a class member for HANDLING_DYNAMIC_PAGE_*
-    close(to_cgi[0]);
-    // copy to_cgi[1] to a class member for WRITING_TO_PIPE
+  }
+  // parent process (server)
+  close(to_cgi[0]);
+  close(from_cgi[1]);
+  server.setEvent(from_cgi[0], EVFILT_READ, EV_ADD | EV_DISABLE, NULL, 0, NULL);  // PROBLEM!!!!!
+  if (request_message.getMethod() == "POST") {
+    state_ = WRITING_TO_PIPE;
+    // prepare things to write to CGI
+    server.setEvent(to_cgi[1], EVFILT_WRITE, EV_ADD, NULL, 0, NULL);  // PROBLEM!!!!!
+  } else {
+    close(to_cgi[1]);
+    state_ = HANDLING_DYNAMIC_PAGE_HEADER;
+    server.setEvent(from_cgi[0], EVFILT_READ, EV_ENABLE, NULL, 0, NULL);  // PROBLEM!!!!!
   }
   return 0;
 }
