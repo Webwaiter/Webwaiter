@@ -30,7 +30,7 @@ void ServerBlock::parseServerBlock(std::fstream &file) {
         brace.pop();
       }
     } else if (tmp.find("location") != std::string::npos) {
-      // url parsing 불가시 error -> tmp_vec size로 파
+      // TODO:url parsing 불가시 error -> tmp_vec size
       location_blocks_.push_back(LocationBlock(file, tmp_vec[1]));
       error_flag |= (1 << 5);
     } else {

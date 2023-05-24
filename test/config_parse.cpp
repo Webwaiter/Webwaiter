@@ -17,13 +17,13 @@ int main(int argc, char **argv) {
     std::cout << test.getServerProgramName() << '\n';
     std::cout << test.getHttpVersion() << '\n';
     std::cout << "----------server------------" << '\n';
-    std::vector<ServerBlock*> servers = test.getServerBlocks();
-    std::cout << servers[0]->getDefaultErrorPages()["400"] << '\n';
-    std::cout << servers[0]->getDefaultErrorPages()["500"] << '\n';
-    std::cout << servers[0]->getClientBodySize() << '\n';
-    std::cout << servers[0]->getServerIP() << '\n';
-    std::cout << servers[0]->getServerPort() << '\n';
-    std::cout << servers[0]->getServerName() << '\n';
+    std::vector<ServerBlock> servers = test.getServerBlocks();
+    std::cout << servers[0].getDefaultErrorPages()["400"] << '\n';
+    std::cout << servers[0].getDefaultErrorPages()["500"] << '\n';
+    std::cout << servers[0].getClientBodySize() << '\n';
+    std::cout << servers[0].getServerIP() << '\n';
+    std::cout << servers[0].getServerPort() << '\n';
+    std::cout << servers[0].getServerName() << '\n';
   }
   catch (int) {
     std::cout << "fail to construct class" << '\n';
