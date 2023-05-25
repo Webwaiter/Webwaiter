@@ -6,7 +6,7 @@
 enum ReturnState {
   SUCCESS,
   FAIL,
-  CONNECTION_CLOSE,
+  CONNECTION_CLOSE
 };
 
 #endif // SRC_STATE_HPP

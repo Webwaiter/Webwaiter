@@ -7,15 +7,7 @@
 
 #include "src/RequestMessage.hpp"
 
-typedef typename std::map<std::string, std::string>::const_iterator const_iterator;
-
-ResponseMessage::ResponseMessage(const RequestMessage &request_message) {
-  status_code_ = 200;
-  status_message_ = "OK";
-  status_protocol_ = "HTTP/1.1";
-  headers_["Content-Type"] = "text/html";
-  headers_["Content-Length"] = "614";
-}
+ResponseMessage::ResponseMessage(int &response_status_code) : response_status_code_(response_status_code) {}
 
 std::string ResponseMessage::generateMessage() const {
   std::stringstream ss;

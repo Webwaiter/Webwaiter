@@ -10,13 +10,16 @@
 #include "src/ReturnState.hpp"
 #include "src/Server.hpp"
 
-Connection::Connection(int connection_socket) : connection_socket_(connection_socket), read_buffer_() {}
+Connection::Connection(int connection_socket, const Kqueue& kqueue)
+    : connection_socket_(connection_socket), request_message_(response_status_code_), response_message_(response_status_code_), kqueue_(kqueue),
+      response_status_code_(200) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
 }
 
 void Connection::parsingRequestMessage() {
+  /*
   // 1. 파싱
   request_message_.parse();
 
@@ -26,7 +29,7 @@ void Connection::parsingRequestMessage() {
   } else {
     openStaticPage();
   }
-  
+  */
 }
 
 void Connection::writingToPipe() {
@@ -38,7 +41,7 @@ void Connection::writingToPipe() {
 ReturnState Connection::work(void) {
   if (checkReadSuccess() == false) {
     if (checkTimeOut()){
-      connectionClose();
+      // connectionClose();
       return CONNECTION_CLOSE;
     }
   }
@@ -66,12 +69,13 @@ ReturnState Connection::work(void) {
 }
 
 void Connection::writeHandler(int fd) {
-  char *buf;
-  size_t size; // string.size()
-  ssize_t written; 
+  char *buf = 0;
+  size_t size = 0; // string.size()
+  ssize_t written = 0; 
 
   // matching string
   ssize_t ret = write(fd, buf + written, size - written);
+  (void)ret;
   // response, request written update
   // written_ += ret;
   // disable write event
