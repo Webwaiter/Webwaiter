@@ -27,3 +27,4 @@ bool RequestMessage::writeDone() {
   }
   return false;
 }
+RequestMessage::RequestMessage(int &response_status_code_) : response_status_code_(response_status_code_) {}

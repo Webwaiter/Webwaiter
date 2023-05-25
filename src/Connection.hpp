@@ -43,6 +43,7 @@ class Connection {
   ResponseMessage response_message_;
   State state_;
   Kqueue kqueue_;
+  int response_status_code_;
 };
 
 #endif  // SRC_CONNECTION_HPP
