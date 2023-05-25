@@ -6,14 +6,14 @@
 #include <queue>
 #include <string>
 
+#include "src/Kqueue.hpp"
 #include "src/RequestMessage.hpp"
 #include "src/ResponseMessage.hpp"
 #include "src/ReturnState.hpp"
-#include "src/Server.hpp"
 
 class Connection {
  public:
-  Connection(int connection_socket);
+  Connection(int connection_socket, const Kqueue& kqueue);
   int getConnectionSocket() const;
   char *getReadBuffer();
   ReturnState work();
@@ -34,7 +34,7 @@ class Connection {
     WRITING_TO_PIPE,
     WRITING_STATIC_PAGE,
     WRITING_DYNAMIC_PAGE_HEADER,
-    WRITING_DYNAMIC_PAGE_BODY,
+    WRITING_DYNAMIC_PAGE_BODY
   };
 
   int connection_socket_;
@@ -42,6 +42,7 @@ class Connection {
   RequestMessage request_message_;
   ResponseMessage response_message_;
   State state_;
+  Kqueue kqueue_;
 };
 
 #endif  // SRC_CONNECTION_HPP
