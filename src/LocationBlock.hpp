@@ -3,6 +3,9 @@
 #ifndef SRC_LOCATIONBLOCK_HPP_
 #define SRC_LOCATIONBLOCK_HPP_
 
+#include <dirent.h>
+#include <unistd.h>
+
 #include <fstream>
 #include <string>
 #include <vector>
@@ -15,10 +18,11 @@ class LocationBlock {
 
  private: 
   void parseLocationBlock(std::fstream &file);
+  void checkSemantics(void) const;
   std::string url_;
   std::string root_dir_;
   std::set<std::string> allowed_method_;
-  bool directory_listing_;
+  std::string directory_listing_;
   std::string index_;
   std::string cgi_extension_;
   std::string cgi_path_;
