@@ -5,8 +5,7 @@
 
 class ResponseMessage {
  public:
-  ResponseMessage();
-  ResponseMessage(const RequestMessage &request_message);
+  explicit ResponseMessage(int &response_status_code);
   ResponseMessage &operator=(const ResponseMessage &rhs);
   std::string generateMessage() const;
   
@@ -14,7 +13,7 @@ class ResponseMessage {
   std::string response_message_;
   ssize_t written_;
   std::string status_protocol_;
-  int status_code_;
+  int &response_status_code_;
   std::string status_message_;
   std::map<std::string, std::string> headers_;
   std::string body_;

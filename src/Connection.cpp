@@ -7,34 +7,24 @@
 #include <queue>
 #include <string>
 
-#include "src/ReturnState.hpp"
 #include "src/Server.hpp"
+#include "src/utils.hpp"
 
-Connection::Connection(int connection_socket) : connection_socket_(connection_socket), read_buffer_() {}
+Connection::Connection(int connection_socket, const Kqueue& kqueue)
+    : connection_socket_(connection_socket), request_message_(response_status_code_), response_message_(response_status_code_), kqueue_(kqueue),
+      response_status_code_(200) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
 }
 
 void Connection::parsingRequestMessage() {
+  /*
   // 1. 파싱
   ReturnState ret = request_message_.parse(read_buffer_);
   if (ret == AGAIN) {
     return;
   }
-
-  /*
-   * 1. 정상적으로 처리 되었으면 RequestMessage 내부 값을 보고 Response message 생성
-   *
-   * 2. parse가 실패했으면 Error Response message 생성
-   *
-   *
-   * status code가 바뀔 수 있는 상황
-   * 0. parsing
-   * 1. response message
-   * 2. 정적 페이지, 동적 페이지 핸들링
-   * 3. 그 외 작업에서도 발생할 수 있음
-   */
 
   if (isCGIExtension()) {
     executeCGIProcess();
@@ -42,6 +32,7 @@ void Connection::parsingRequestMessage() {
     openStaticPage();
   }
 
+  */
 }
 
 void Connection::writingToPipe() {
@@ -52,8 +43,8 @@ void Connection::writingToPipe() {
 
 ReturnState Connection::work(void) {
   if (checkReadSuccess() == false) {
-    if (checkTimeOut()) {
-      connectionClose();
+    if (checkTimeOut()){
+      // connectionClose();
       return CONNECTION_CLOSE;
     }
   }
@@ -73,12 +64,13 @@ ReturnState Connection::work(void) {
 }
 
 void Connection::writeHandler(int fd) {
-  char *buf;
-  size_t size; // string.size()
-  ssize_t written;
+  char *buf = 0;
+  size_t size = 0; // string.size()
+  ssize_t written = 0; 
 
   // matching string
   ssize_t ret = write(fd, buf + written, size - written);
+  (void)ret;
   // response, request written update
   // written_ += ret;
   // disable write event

@@ -3,6 +3,8 @@
 #include <sstream>
 #include "src/RequestMessage.hpp"
 
+RequestMessage::RequestMessage(int &response_status_code_) : response_status_code_(response_status_code_) {}
+
 std::string RequestMessage::getMethod(void) const {
   return (method_);
 }
@@ -128,4 +130,3 @@ const std::string &RequestMessage::getAProtocol() const {
 const std::map<std::string, std::string> &RequestMessage::getHeaders() const {
   return headers_;
 }
-RequestMessage::RequestMessage() : state_(kMethod), written_(0) {}
