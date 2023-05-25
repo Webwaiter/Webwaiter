@@ -1,7 +1,7 @@
 // Copyright 2023 ean, hanbkim, jiyunpar
 
 #include "src/ServerBlock.hpp"
-#include "src/ReturnState.hpp"
+
 #include "src/utils.hpp"
 
 ServerBlock::ServerBlock(std::fstream &file) {

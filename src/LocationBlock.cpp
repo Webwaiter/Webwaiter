@@ -1,7 +1,7 @@
 // Copyright 2023 ean, hanbkim, jiyunpar
 
 #include "src/LocationBlock.hpp"
-#include "src/ReturnState.hpp"
+
 #include "src/utils.hpp"
 
 LocationBlock::LocationBlock(std::fstream &file, std::string url) :url_(url) {

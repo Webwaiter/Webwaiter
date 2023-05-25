@@ -1,7 +1,6 @@
 // Copyright 2023 ean, hanbkim, jiyunpar
 
 #include "src/Config.hpp"
-#include "src/ReturnState.hpp"
 #include "src/utils.hpp"
 
 Config::Config(const char *file_path) {
