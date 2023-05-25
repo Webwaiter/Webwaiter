@@ -1,6 +1,7 @@
 // Copyright 2023 ean, hanbkim, jiyunpar
 
 #include "src/Config.hpp"
+
 #include "src/utils.hpp"
 
 Config::Config(const char *file_path) {
@@ -9,6 +10,20 @@ Config::Config(const char *file_path) {
   }
   catch(int) {
     throw FAIL;
+  }
+}
+
+static void checkBracePair(std::vector<std::string> &tmp_vec, std::stack<std::string> &brace) {
+  for (int i = 0; i < tmp_vec.size(); ++i) {
+    if (tmp_vec[i] == "{") {
+      brace.push("{");
+    } else if (tmp_vec[i] == "}") {
+      if (brace.empty()) {
+        throw FAIL;
+      } else if (brace.top() == "{") {
+        brace.pop();
+      }
+    }
   }
 }
 
@@ -26,17 +41,7 @@ void Config::parseConfigFile(const char *file_path) {
     std::getline(file, line);
     std::string tmp = skipCharset(line, " \t");
     std::vector<std::string> tmp_vec = split(line, " \t");
-    for (int i = 0; i < tmp_vec.size(); ++i) {
-      if (tmp_vec[i] == "{") {
-        brace.push("{");
-      } else if (tmp_vec[i] == "}") {
-        if (brace.empty()) {
-          throw FAIL;
-        } else if (brace.top() == "{") {
-          brace.pop();
-        }
-      }
-    }
+    checkBracePair(tmp_vec, brace);
     if (tmp == "") {
       continue;
     }
@@ -45,15 +50,14 @@ void Config::parseConfigFile(const char *file_path) {
         throw FAIL;
       }
       server_blocks_.push_back(ServerBlock(file));
+      brace.pop();
       error_flag |= (1 << 0);
-    } else {
-      if (tmp_vec[0] == "program_name" && tmp_vec.size() == 2) {
+    } else if (tmp_vec[0] == "program_name" && tmp_vec.size() == 2) {
         server_program_name_ = tmp_vec[1];
         error_flag |= (1 << 1);
-      } else if (tmp_vec[0] == "http_version" && tmp_vec.size() == 2) {
+    } else if (tmp_vec[0] == "http_version" && tmp_vec.size() == 2) {
         http_version_ = tmp_vec[1];
         error_flag |= (1 << 2);
-      }
     }
   }
   if (error_flag != 7 && !brace.empty()) {
