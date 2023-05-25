@@ -20,6 +20,7 @@
 
 # OS or Editor specific files
 .DS_Store
+a.out.dSYM
 Thumbs.db
 .vscode/
 *.sublime-project
