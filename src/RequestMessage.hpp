@@ -5,6 +5,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 class RequestMessage {
  public:
@@ -19,14 +20,14 @@ class RequestMessage {
     kReady,
     kParse
   };
-  
+
   ssize_t written_;
   std::string leftover_;
   std::string method_;
   std::string uri_;
   std::string protocol_;
   std::map<std::string, std::string> headers_;
-  std::string body_;
+  std::vector<char> body_;
   int &response_status_code_;
 };
 
