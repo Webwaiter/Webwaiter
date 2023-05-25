@@ -16,7 +16,7 @@ class RequestMessage {
  private:
   enum ParseState {
     kReady,
-    kParse,
+    kParse
   };
   
   ssize_t written_;
