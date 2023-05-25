@@ -23,6 +23,7 @@ class ServerBlock {
 
  private:
   void parseServerBlock(std::fstream &file);
+  void checkSemantics(void) const;
   std::map<std::string, std::string> default_error_pages_;
   int client_body_size_;
   std::string server_ip_;

@@ -7,6 +7,7 @@
 ServerBlock::ServerBlock(std::fstream &file) {
   try {
     parseServerBlock(file);
+    checkSemantics();
   } catch (int) {
     throw FAIL;
   }
@@ -26,6 +27,9 @@ static void checkBracePair(std::vector<std::string> &tmp_vec, std::stack<std::st
   }
 }
 
+void ServerBlock::checkSemantics(void) const {
+
+}
 void ServerBlock::parseServerBlock(std::fstream &file) {
   int error_flag = 0;
   std::stack<std::string> brace;
