@@ -6,20 +6,22 @@
 #include <map>
 #include <string>
 
+#include "src/utils.hpp"
+
 class RequestMessage {
  public:
   RequestMessage(int &response_status_code_);
   std::string getMethod(void) const;
   void appendLeftover(const std::string &buffer, size_t read_count);
-  void parse(const std::string &read_buffer_);
+  ReturnState parse(const std::string &read_buffer_);
   bool writeDone();
 
  private:
-  void parseStartLine(std::string &buffer, size_t &read_count);
-  void parseMethod(std::string &buffer, size_t &read_count);
-  void parseUri(std::string &buffer, size_t &read_count);
-  void parseProtocol(std::string &buffer, size_t &read_count);
-  void parseHeaderLine(std::string &buffer, size_t &read_count);
+  ReturnState parseStartLine(std::string &buffer, size_t &read_count);
+  ReturnState parseMethod(std::string &buffer, size_t &read_count);
+  ReturnState parseUri(std::string &buffer, size_t &read_count);
+  ReturnState parseProtocol(std::string &buffer, size_t &read_count);
+  ReturnState parseHeaderLine(std::string &buffer, size_t &read_count);
 
   enum ParseState {
     kMethod,
@@ -45,6 +47,7 @@ class RequestMessage {
   std::map<std::string, std::string> headers_;
   std::string body_;
   int &response_status_code_;
+  ReturnState parseBody(std::string &buffer, size_t &read_count);
 };
 
 #endif  // SRC_REQUESTMESSAGE_HPP
