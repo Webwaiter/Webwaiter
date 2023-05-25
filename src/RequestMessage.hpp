@@ -5,6 +5,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "src/utils.hpp"
 
@@ -45,7 +46,7 @@ class RequestMessage {
   std::string uri_;
   std::string protocol_;
   std::map<std::string, std::string> headers_;
-  std::string body_;
+  std::vector<char> body_;
   int &response_status_code_;
   ReturnState parseBody(std::string &buffer, size_t &read_count);
 };

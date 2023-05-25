@@ -74,8 +74,7 @@ void Server::run() {
           std::perror("accept() error");
         }
       } else if(filter == EVFILT_READ) {
-        char *buf = connections[fd].getReadBuffer();
-        read(fd, buf, sizeof(buf));
+        connections[fd].readHandler(fd);
         kqueue_.setEvent(fd, EVFILT_READ, EV_DISABLE, 0, 0, NULL);
       } else if(filter == EVFILT_WRITE) {
         connections[fd].writeHandler(fd);

@@ -9,7 +9,7 @@
 #include "src/Kqueue.hpp"
 #include "src/RequestMessage.hpp"
 #include "src/ResponseMessage.hpp"
-#include "src/ReturnState.hpp"
+#include "utils.hpp"
 
 class Connection {
  public:
@@ -23,6 +23,7 @@ class Connection {
   void executeCGIProcess();
   void openStaticPage();
   void writingToPipe();
+  void readHandler(int fd);
   void writeHandler(int fd);
 
  private:
@@ -39,6 +40,8 @@ class Connection {
 
   int connection_socket_;
   char read_buffer_[8096];
+  ssize_t read_;
+  
   RequestMessage request_message_;
   ResponseMessage response_message_;
   State state_;
