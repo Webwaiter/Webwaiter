@@ -8,6 +8,7 @@
 
 class RequestMessage {
  public:
+  RequestMessage(int &response_status_code_);
   std::string getMethod(void) const;
   void append(std::string &buf);
   int parse();
@@ -26,6 +27,7 @@ class RequestMessage {
   std::string protocol_;
   std::map<std::string, std::string> headers_;
   std::string body_;
+  int &response_status_code_;
 };
 
 #endif  // SRC_REQUESTMESSAGE_HPP
