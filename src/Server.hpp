@@ -15,13 +15,8 @@ class Server {
   void run();
 
  private:
-  const Connection& acceptClient(int listen_socket, std::vector<Connection>& v);
-  void receiveRequestMessage(Connection &Connection);
-  void sendResponseMessage(Connection &Connection);
-
+  Connection *acceptClient(int listen_socket);
   bool isListenSocketEvent(int catch_fd);
-  void sendStaticMessage(void);
-
 
   Config config_;
   std::vector<int> listen_sockets_;
