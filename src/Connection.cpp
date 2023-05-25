@@ -18,15 +18,30 @@ int Connection::getConnectionSocket() const {
 
 void Connection::parsingRequestMessage() {
   // 1. 파싱
-  request_message_.parse(read_buffer_);
+  ReturnState ret = request_message_.parse(read_buffer_);
+  if (ret == AGAIN) {
+    return;
+  }
 
-  
-  if (isCGIExtension) {
+  /*
+   * 1. 정상적으로 처리 되었으면 RequestMessage 내부 값을 보고 Response message 생성
+   *
+   * 2. parse가 실패했으면 Error Response message 생성
+   *
+   *
+   * status code가 바뀔 수 있는 상황
+   * 0. parsing
+   * 1. response message
+   * 2. 정적 페이지, 동적 페이지 핸들링
+   * 3. 그 외 작업에서도 발생할 수 있음
+   */
+
+  if (isCGIExtension()) {
     executeCGIProcess();
   } else {
     openStaticPage();
   }
-  
+
 }
 
 void Connection::writingToPipe() {
@@ -37,30 +52,22 @@ void Connection::writingToPipe() {
 
 ReturnState Connection::work(void) {
   if (checkReadSuccess() == false) {
-    if (checkTimeOut()){
+    if (checkTimeOut()) {
       connectionClose();
       return CONNECTION_CLOSE;
     }
   }
   switch (state_) {
-    case PARSING_REQUEST_MESSAGE:
-      parsingRequestMessage();
+    case PARSING_REQUEST_MESSAGE:parsingRequestMessage();
       break;
-    case HANDLING_STATIC_PAGE:
+    case HANDLING_STATIC_PAGE:break;
+    case HANDLING_DYNAMIC_PAGE_HEADER:break;
+    case HANDLING_DYNAMIC_PAGE_BODY:break;
+    case WRITING_TO_PIPE:writingToPipe();
       break;
-    case HANDLING_DYNAMIC_PAGE_HEADER:
-      break;
-    case HANDLING_DYNAMIC_PAGE_BODY:
-      break;
-    case WRITING_TO_PIPE:
-      writingToPipe();
-      break;
-    case WRITING_STATIC_PAGE:
-      break;
-    case WRITING_DYNAMIC_PAGE_HEADER:
-      break;
-    case WRITING_DYNAMIC_PAGE_BODY:
-      break;
+    case WRITING_STATIC_PAGE:break;
+    case WRITING_DYNAMIC_PAGE_HEADER:break;
+    case WRITING_DYNAMIC_PAGE_BODY:break;
   }
   return SUCCESS;
 }
@@ -68,7 +75,7 @@ ReturnState Connection::work(void) {
 void Connection::writeHandler(int fd) {
   char *buf;
   size_t size; // string.size()
-  ssize_t written; 
+  ssize_t written;
 
   // matching string
   ssize_t ret = write(fd, buf + written, size - written);
