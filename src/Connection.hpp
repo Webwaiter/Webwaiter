@@ -3,13 +3,16 @@
 #ifndef SRC_CONNECTION_HPP_
 #define SRC_CONNECTION_HPP_
 
+#include <sys/event.h>
+
+#include <vector>
 #include <queue>
 #include <string>
 
 #include "src/Kqueue.hpp"
 #include "src/RequestMessage.hpp"
 #include "src/ResponseMessage.hpp"
-#include "src/ReturnState.hpp"
+#include "src/utils.hpp"
 
 class Connection {
  public:
@@ -23,7 +26,9 @@ class Connection {
   void executeCGIProcess();
   void openStaticPage();
   void writingToPipe();
-  void writeHandler(int fd);
+  ReturnState writeHandler(const struct kevent &event);
+  ReturnState readHandler(const struct kevent &event);
+  void closeConnection();
 
  private:
   enum State {
@@ -44,6 +49,10 @@ class Connection {
   State state_;
   Kqueue kqueue_;
   int response_status_code_;
+  std::vector<int> fd_vec_;
+  ssize_t read_;
+  size_t read_cnt_;
+  
 };
 
 #endif  // SRC_CONNECTION_HPP
