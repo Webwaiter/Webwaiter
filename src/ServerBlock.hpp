@@ -3,6 +3,8 @@
 #ifndef SRC_SERVERBLOCK_HPP_
 #define SRC_SERVERBLOCK_HPP_
 
+#include <unistd.h>
+
 #include <fstream>
 #include <string>
 #include <vector>

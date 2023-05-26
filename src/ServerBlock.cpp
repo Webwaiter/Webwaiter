@@ -26,7 +26,11 @@ static void checkBracePair(std::vector<std::string> &tmp_vec, std::stack<std::st
     }
   }
 }
-
+static void checkDefaultErrorPage(std::map<std::string, std::string> &default_error_page) {
+  if (access(default_error_page["400"].c_str(), R_OK | F_OK) == -1) {
+    
+  }
+}
 void ServerBlock::checkSemantics(void) const {
 
 }
