@@ -68,7 +68,7 @@ ReturnState Connection::work(void) {
   return SUCCESS;
 }
 
-void Connection::writeHandler(int fd) {
+ReturnState Connection::writeHandler(const struct kevent &event) {
   char *buf = 0;
   size_t size = 0; // string.size()
   ssize_t written = 0; 
@@ -81,6 +81,36 @@ void Connection::writeHandler(int fd) {
   // disable write event
 }
 
+ReturnState Connection::readHandler(const struct kevent &event) {
+  // client가 강제로 커넥션을 끊었을 때
+  // cgi프로세스가 출력을 만드는 중간에 강제로 종료되었을 때
+  if (event.flags == EV_EOF) {
+    return FAIL;
+  }
+  int left = event.data;
+  if (left <= sizeof(read_buffer_)) {
+    if ((read_ = read(event.ident, read_buffer_, sizeof(read_buffer_))) == -1) {
+      return FAIL;
+    }
+    if (read_ == left) {
+      read_cnt_ += read_;
+      close(event.ident);
+    }
+  } else {
+    if ((read_ = read(event.ident, read_buffer_, sizeof(read_buffer_))) == -1) {
+      return FAIL;
+    }
+    read_cnt_ += read_;
+  }
+}
+
 char *Connection::getReadBuffer() {
   return read_buffer_;
+}
+
+void Connection::closeConnection() {
+  close(connection_socket_);
+  for (size_t i = 0; i < fd_vec_.size(); ++i) {
+    close(fd_vec_[i]);
+  }
 }
