@@ -43,21 +43,21 @@ static void checkRootDir(const std::string &root_dir) {
 }
 
 static void checkAllowMethod(const std::set<std::string> &allowed_method) {
-  for (std::set<std::string>::const_iterator it; it != allowed_method.end(); ++it) {
-    if (*it != "GET" || *it != "POST" || *it != "DELETE") {
+  for (std::set<std::string>::const_iterator it = allowed_method.begin(); it != allowed_method.end(); ++it) {
+    if (!(*it == "GET" || *it == "POST" || *it == "DELETE")) {
       throw FAIL;
     }
   }
 }
 
 static void checkDirectoryListing(const std::string &directory_listting) {
-  if (directory_listting != "on" || directory_listting != "off") {
+  if (!(directory_listting == "on" || directory_listting == "off")) {
     throw FAIL;
   }
 }
 
 static void checkCGIExtention(const std::string &cgi_extention) {
-  if (cgi_extention != "php" | cgi_extention != "py") {
+  if (!(cgi_extention == "php" || cgi_extention == "py")) {
     throw FAIL;
   }
 }
