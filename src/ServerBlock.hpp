@@ -11,6 +11,7 @@
 #include <map>
 #include <stack>
 #include <cstdlib>
+#include <cctype>
 
 #include "src/LocationBlock.hpp"
 
