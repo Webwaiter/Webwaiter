@@ -46,10 +46,17 @@ static void checkMIMEPath(std::string mime_path) {
   }
 }
 
+static void checkTimeout(int timeout) {
+  if (timeout <= 0 || timeout >= 100) {
+    throw FAIL;
+  }
+}
+
 void Config::checkSemantics(void) const {
   checkHTTPVersion(http_version_);
   checkStatusPath(status_path_);
   checkMIMEPath(mime_path_);
+  checkTimeout(timeout_);
 }
 
 void Config::parseConfigFile(const char *file_path) {
@@ -91,9 +98,17 @@ void Config::parseConfigFile(const char *file_path) {
       mime_path_ = tmp_vec[1];
       parseMIMEFile(mime_path_.c_str());
       error_flag |= (1 << 4);
+    } else if (tmp_vec[0] == "timeout" && tmp_vec.size() == 2) {
+      for (int i = 0; i < tmp_vec[1].size(); ++i) {
+        if (!isdigit(tmp_vec[1][i])) {
+          throw FAIL;
+        }
+      }
+      timeout_ = atoi(tmp_vec[1].c_str());
+      error_flag |= (1 << 5);
     }
   }
-  if (error_flag != 31 && !brace.empty()) {
+  if (!(error_flag == 63) || !brace.empty()) {
     throw FAIL;
   }
 }

@@ -114,7 +114,7 @@ void LocationBlock::parseLocationBlock(std::fstream &file) {
       error_flag |=  (1 << 6);
     }
   }
-  if (error_flag != 63 && error_flag != 127 && !brace.empty()) {
+  if (!(error_flag == 63 || error_flag == 127) || !brace.empty()) {
     throw FAIL;	
   }
 }

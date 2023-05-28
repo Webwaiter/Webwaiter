@@ -124,7 +124,7 @@ void ServerBlock::parseServerBlock(std::fstream &file) {
       error_flag |=  (1 << 8);
     }
   }
-  if (error_flag != 127 && error_flag != 255 && !brace.empty()) {
+  if (!(error_flag == 127 || error_flag == 255) || !brace.empty()) {
     throw FAIL;
   }
 }

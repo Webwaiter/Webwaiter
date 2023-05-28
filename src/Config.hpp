@@ -31,6 +31,7 @@ class Config {
   std::string http_version_;
   std::string status_path_;
   std::string mime_path_;
+  int timeout_;
   std::map<int, std::string> status_messages_;
   std::map<std::string, std::string> mime_types_;
   std::vector<ServerBlock> server_blocks_; 
