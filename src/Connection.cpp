@@ -12,7 +12,7 @@
 
 Connection::Connection(int connection_socket, const Kqueue& kqueue)
     : connection_socket_(connection_socket), request_message_(response_status_code_), response_message_(response_status_code_), kqueue_(kqueue),
-      response_status_code_(200) {}
+      response_status_code_(200), read_(0), read_cnt_(0), leftover_data_(0) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
@@ -87,21 +87,11 @@ ReturnState Connection::readHandler(const struct kevent &event) {
   if (event.flags == EV_EOF) {
     return FAIL;
   }
-  int left = event.data;
-  if (left <= sizeof(read_buffer_)) {
-    if ((read_ = read(event.ident, read_buffer_, sizeof(read_buffer_))) == -1) {
-      return FAIL;
-    }
-    if (read_ == left) {
-      read_cnt_ += read_;
-      close(event.ident);
-    }
-  } else {
-    if ((read_ = read(event.ident, read_buffer_, sizeof(read_buffer_))) == -1) {
-      return FAIL;
-    }
-    read_cnt_ += read_;
+  leftover_data_ = event.data;
+  if ((read_ = read(event.ident, read_buffer_, sizeof(read_buffer_))) == -1) {
+    return FAIL;
   }
+  read_cnt_ += read_;
 }
 
 char *Connection::getReadBuffer() {

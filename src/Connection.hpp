@@ -52,7 +52,7 @@ class Connection {
   std::vector<int> fd_vec_;
   ssize_t read_;
   size_t read_cnt_;
-  
+  intptr_t leftover_data_;
 };
 
 #endif  // SRC_CONNECTION_HPP
