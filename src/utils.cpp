@@ -32,3 +32,16 @@ std::string skipCharset(std::string input, std::string charset) {
 		return input;
 	}
 }
+
+void trim(std::string& str)
+{
+  // 왼쪽 공백 제거
+  std::string::size_type left_pos = str.find_first_not_of(" ");
+  if (left_pos != std::string::npos)
+    str.erase(0, left_pos);
+
+  // 오른쪽 공백 제거
+  std::string::size_type right_pos = str.find_last_not_of(" ");
+  if (right_pos != std::string::npos)
+    str.erase(right_pos + 1);
+}
