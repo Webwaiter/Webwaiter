@@ -24,8 +24,7 @@ int main(int argc, char **argv) {
     std::cout << servers[0].getServerIP() << '\n';
     std::cout << servers[0].getServerPort() << '\n';
     std::cout << servers[0].getServerName() << '\n';
-  }
-  catch (int) {
+  } catch (int) {
     std::cout << "fail to construct class" << '\n';
   } 
   return 0;
