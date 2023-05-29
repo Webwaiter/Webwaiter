@@ -11,44 +11,52 @@
 
 class RequestMessage {
  public:
-  RequestMessage(int &response_status_code_);
-  std::string getMethod(void) const;
-  void appendLeftover(const std::string &buffer, size_t read_count);
-  ReturnState parse(const std::string &read_buffer_);
+  explicit RequestMessage(int &response_status_code_);
+  void appendLeftover(const char *buffer, size_t n);
+  ReturnState parse(const char *buffer, size_t read);
   bool writeDone();
 
- private:
-  ReturnState parseStartLine(std::string &buffer, size_t &read_count);
-  ReturnState parseMethod(std::string &buffer, size_t &read_count);
-  ReturnState parseUri(std::string &buffer, size_t &read_count);
-  ReturnState parseProtocol(std::string &buffer, size_t &read_count);
-  ReturnState parseHeaderLine(std::string &buffer, size_t &read_count);
+  const std::string &getMethod(void) const;
+  const std::string &getUri() const;
+  const std::string &getAProtocol() const;
+  const std::map<std::string, std::string> &getHeaders() const;
+  const std::vector<char> &getBody() const;
 
+ private:
   enum ParseState {
     kMethod,
     kUri,
     kProtocol,
+    kSkipCrlf,
     kHeaderLine,
-    kBodyLine,
+    kContentLength,
+    kChunked,
+    kParseDone
   };
+
+  ReturnState parseStartLine();
+  ReturnState parseMethod();
+  ReturnState parseUri();
+  ReturnState parseProtocol();
+  ReturnState skipCrlf();
+  ReturnState parseHeaderLine();
+  ReturnState checkBodyType();
+  ReturnState parseContentLengthBody();
+  ReturnState parseChunkedBody();
 
   ParseState state_;
   ssize_t written_;
 
-  std::string leftover_;
- public:
-  const std::string &getMethod1() const;
-  const std::string &getUri() const;
-  const std::string &getAProtocol() const;
-  const std::map<std::string, std::string> &getHeaders() const;
- private:
+  std::vector<char> leftover_;
+  ssize_t content_length_;
+  ssize_t chunked_length_;
+
   std::string method_;
   std::string uri_;
   std::string protocol_;
   std::map<std::string, std::string> headers_;
   std::vector<char> body_;
   int &response_status_code_;
-  ReturnState parseBody(std::string &buffer, size_t &read_count);
 };
 
 #endif  // SRC_REQUESTMESSAGE_HPP

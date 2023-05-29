@@ -1,16 +1,23 @@
 // Copyright 2023 ean, hanbkim, jiyunpar
 
-#include <sstream>
 #include "src/RequestMessage.hpp"
 
-RequestMessage::RequestMessage(int &response_status_code_) : response_status_code_(response_status_code_) {}
+#include <sstream>
 
-std::string RequestMessage::getMethod(void) const {
-  return (method_);
-}
+#include "src/utils.hpp"
 
-void RequestMessage::appendLeftover(const std::string &buffer, size_t read_count) {
-  leftover_.append(buffer, read_count);
+typedef std::vector<char>::iterator vector_iterator;
+typedef std::map<std::string, std::string>::iterator map_iterator;
+static const char kCrlf[] = {'\r', '\n'};
+static const size_t kCrlfLength = 2;
+
+RequestMessage::RequestMessage(int &response_status_code_)
+    : response_status_code_(response_status_code_), state_(kMethod), content_length_(-1), chunked_length_(-1) {}
+
+void RequestMessage::appendLeftover(const char *buffer, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
+    leftover_.push_back(buffer[i]);
+  }
 }
 
 bool RequestMessage::writeDone() {
@@ -21,116 +28,194 @@ bool RequestMessage::writeDone() {
   return false;
 }
 
-ReturnState RequestMessage::parse(const char *buffer) {
-  std::vector<char> merge_buffer;
-  std::string merge_buffer = leftover_ + buffer;
-  leftover_.clear();
-  size_t read_count = 0;
+ReturnState RequestMessage::parse(const char *buffer, size_t read) {
+  if (read <= 0)
+    return AGAIN;
 
-  if (parseStartLine(merge_buffer, read_count) == SUCCESS)
+  appendLeftover(buffer, read);
+
+  if (parseStartLine() == SUCCESS) {
     return SUCCESS;
+  }
+  if (skipCrlf() == SUCCESS) {
+    return SUCCESS;
+  }
+  if (parseHeaderLine() == SUCCESS) {
+    return SUCCESS;
+  }
+  if (parseContentLengthBody() == SUCCESS) {
+    return SUCCESS;
+  }
+//  if (parseChunkedBody() == SUCCESS) {
+//    return SUCCESS
+//  }
+  return AGAIN;
+}
+
+ReturnState RequestMessage::parseStartLine() {
+  if (parseMethod() == SUCCESS) {
+    return SUCCESS;
+  }
+  if (parseUri() == SUCCESS) {
+    return SUCCESS;
+  }
+  if (parseProtocol() == SUCCESS) {
+    return SUCCESS;
+  }
+  return AGAIN;
+}
+
+ReturnState RequestMessage::parseMethod() {
+  if (state_ != kMethod) {
+    return AGAIN;
+  }
+  vector_iterator space_pos = std::find(leftover_.begin(), leftover_.end(), ' ');
+  if (space_pos == leftover_.end())
+    return AGAIN;
+
+  method_.insert(method_.begin(), leftover_.begin(), space_pos);
+  leftover_.erase(leftover_.begin(), space_pos + 1);
+  state_ = kUri;
+  return AGAIN;
+}
+
+ReturnState RequestMessage::parseUri() {
+  if (state_ != kUri) {
+    return AGAIN;
+  }
+
+  vector_iterator space_pos = std::find(leftover_.begin(), leftover_.end(), ' ');
+  if (space_pos == leftover_.end())
+    return AGAIN;
+
+  uri_.insert(uri_.begin(), leftover_.begin(), space_pos);
+  leftover_.erase(leftover_.begin(), space_pos + 1);
+  // Todo: uri 분석
+
+  state_ = kProtocol;
+  return AGAIN;
+}
+
+ReturnState RequestMessage::parseProtocol() {
+  if (state_ != kProtocol) {
+    return AGAIN;
+  }
+
+  vector_iterator crlf_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
+  if (crlf_pos == leftover_.end())
+    return AGAIN;
+
+  protocol_.insert(protocol_.begin(), leftover_.begin(), crlf_pos);
+  // if (protocol_ != "HTTP/1.1")
+  //  return SUCCESS;
+  //   Todo: protocol 분석
+  state_ = kSkipCrlf;
+  leftover_.erase(leftover_.begin(), crlf_pos + 2);
+  return AGAIN;
+}
+
+ReturnState RequestMessage::skipCrlf() {
+  if (state_ != kSkipCrlf)
+    return AGAIN;
   /*
    * skipCrlf() startline이 들어오고 header가 들어오기 전 공백이 들어오면 400 에러를 뱉어야함. 그리고 crlf만 들어온 문자 스킵할 수 있어야 함.
    */
-  if (parseHeaderLine(merge_buffer, read_count) == SUCCESS)
+  vector_iterator line_pos;
+
+  while (true) {
+    line_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
+    if (line_pos == leftover_.end())
+      return AGAIN;
+
+    std::string field_line(leftover_.begin(), line_pos);
+    if (field_line.empty()) {
+      leftover_.erase(leftover_.begin(), line_pos + kCrlfLength);
+      continue;
+    }
+
+    if (!isblank(field_line.front())) {
+      state_ = kHeaderLine;
+      return AGAIN;
+    }
+
+    response_status_code_ = 400;
     return SUCCESS;
-  if (parseBody() == SUCCESS)
-    return SUCCESS;
-
-  appendLeftover(merge_buffer, read_count);
-  return AGAIN;
-}
-
-ReturnState RequestMessage::parseStartLine(std::string &buffer, size_t &read_count) {
-  if (state_ == kMethod) {
-    parseMethod(buffer, read_count);
-  }
-  if (state_ == kUri) {
-    parseUri(buffer, read_count);
-  }
-  if (state_ == kProtocol) {
-    parseProtocol(buffer, read_count);
   }
 }
 
-ReturnState RequestMessage::parseMethod(std::string &buffer, size_t &read_count) {
-  size_t space_pos = buffer.find(' ', read_count);
+static void toLower(char &c) {
+  c = std::tolower(c);
+}
 
-  if (space_pos == std::string::npos)
+ReturnState RequestMessage::parseHeaderLine() {
+  if (state_ != kHeaderLine)
     return AGAIN;
-  method_ = buffer.substr(read_count,  space_pos - read_count);
-  state_ = kUri;
-  read_count += space_pos + 1;
-  return AGAIN;
-}
 
-ReturnState RequestMessage::parseUri(std::string &buffer, size_t &read_count) {
-  size_t space_pos = buffer.find(' ', read_count);
+  //Todo: value에 \r \n \0 있으면 예외 처리
+  vector_iterator line_pos;
+  while (true) {
+    line_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
+    if (line_pos == leftover_.end()) {
+      return AGAIN;
+    }
 
-  if (space_pos == std::string::npos)
-    return AGAIN;
-  uri_ = buffer.substr(read_count, space_pos - read_count);
-  state_ = kProtocol;
-  read_count += space_pos + 1;
-  return AGAIN;
-}
+    std::string field_line(leftover_.begin(), line_pos);
+    leftover_.erase(leftover_.begin(), line_pos + kCrlfLength);
 
-ReturnState RequestMessage::parseProtocol(std::string &buffer, size_t &read_count) {
-  size_t crlf_pos = buffer.find("\r\n", read_count);
+    if (field_line.empty()) {
+      return checkBodyType();
+    }
 
-  if (crlf_pos == std::string::npos)
-    return AGAIN;
-  protocol_ = buffer.substr(read_count, crlf_pos - read_count);
-  // if (protocol_ != "HTTP/1.1")
-  //  return SUCCESS;
-  //   make error status, parsing end
-  state_ = kHeaderLine;
-  read_count += crlf_pos + 2;
-  return AGAIN;
-}
-
-ReturnState RequestMessage::parseHeaderLine(std::string &buffer, size_t &read_count) {
-  if (buffer.find("\r\n", read_count) == std::string::npos) {
-    return AGAIN;
-  }
-
-  if (buffer.find("\r\n\r\n", read_count) != std::string::npos) {
-    state_ = kBodyLine;
-  }
-
-  std::string field_line;
-  std::string delimiter("\r\n");
-  size_t line_pos = 0;
-
-  //Todo: field에 \r \n \0 있으면 예외 처리
-  while ((line_pos = buffer.find(delimiter, read_count)) != std::string::npos) {
-    field_line = buffer.substr(read_count, line_pos - read_count);
-
-    // ":" 기준으로 스플릿 후 map에 저장
-    size_t colon_pos = field_line.find(':', read_count);
+    size_t colon_pos = field_line.find(':');
     if (colon_pos != std::string::npos) {
       // Todo: field name에 공백이 있으면 예외 처리
       std::string field_name(field_line.substr(0, colon_pos));
-      std::lower_bound(field_name.begin(), field_name.end());
       if (field_name.find(' ') != std::string::npos) {
         response_status_code_ = 400;
         return SUCCESS;
       }
-      size_t value_pos = field_line.find_first_not_of(' ',colon_pos + 1);
-      std::string field_value(field_line.substr(value_pos, field_line.length() - value_pos));
+      std::for_each(field_name.begin(), field_name.end(), toLower);
+      std::string field_value(field_line.begin() + colon_pos + 1, field_line.end());
+      trim(field_value);
       headers_[field_name] = field_value;
     }
-    read_count += line_pos + delimiter.length();
+  }
+}
+
+ReturnState RequestMessage::checkBodyType() {
+  map_iterator content_length = headers_.find("content-length");
+  map_iterator chunked = headers_.find("transfer-encoding");
+
+  if (content_length != headers_.end() && chunked != headers_.end()) {
+    response_status_code_ = 400;
+    return SUCCESS;
+  }
+  if (content_length != headers_.end()) {
+    content_length_ = std::strtol(content_length->second.c_str(), NULL, 10);
+    state_ = kContentLength;
+  }
+  if (chunked != headers_.end()) {
+    state_ = kChunked;
   }
   return AGAIN;
 }
 
-ReturnState RequestMessage::parseBody(std::string &buffer, size_t &read_count) {
-  headers_[""]
-  return AGAIN;
+ReturnState RequestMessage::parseContentLengthBody() {
+  if (state_ != kContentLength) {
+    return AGAIN;
+  }
+
+  if (leftover_.size() < content_length_) {
+    return AGAIN;
+  }
+
+  body_.insert(body_.end(), leftover_.begin(), leftover_.begin() + content_length_);
+  leftover_.erase(leftover_.begin(), leftover_.begin() + content_length_);
+  state_ = kParseDone;
+  return SUCCESS;
 }
 
-const std::string &RequestMessage::getMethod1() const {
+const std::string &RequestMessage::getMethod(void) const {
   return method_;
 }
 const std::string &RequestMessage::getUri() const {
@@ -141,4 +226,7 @@ const std::string &RequestMessage::getAProtocol() const {
 }
 const std::map<std::string, std::string> &RequestMessage::getHeaders() const {
   return headers_;
+}
+const std::vector<char> &RequestMessage::getBody() const {
+  return body_;
 }
