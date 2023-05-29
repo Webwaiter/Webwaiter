@@ -19,14 +19,15 @@ class ServerBlock {
  public:
   explicit ServerBlock(std::fstream &file);
   std::map<std::string, std::string> getDefaultErrorPages(void) const;
-  int getClientBodySize(void) const;
-  std::string getServerIP(void) const;
-  int getServerPort(void) const;
-  std::string getServerName(void) const;
+  int getClientBodySize() const;
+  std::string getServerIP() const;
+  int getServerPort() const;
+  std::string getServerName() const;
+  std::vector<LocationBlock> getLocationBlocks() const;
 
  private:
   void parseServerBlock(std::fstream &file);
-  void checkSemantics(void) const;
+  void checkSemantics() const;
   std::map<std::string, std::string> default_error_pages_;
   int client_body_size_;
   std::string server_ip_;
