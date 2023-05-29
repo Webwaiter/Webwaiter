@@ -42,7 +42,7 @@ static void checkRootDir(const std::string &root_dir) {
   }
 }
 
-static void checkAllowMethod(const std::set<std::string> &allowed_method) {
+static void checkAllowedMethod(const std::set<std::string> &allowed_method) {
   for (std::set<std::string>::const_iterator it = allowed_method.begin(); it != allowed_method.end(); ++it) {
     if (!(*it == "GET" || *it == "POST" || *it == "DELETE")) {
       throw FAIL;
@@ -57,24 +57,18 @@ static void checkDirectoryListing(const std::string &directory_listting) {
 }
 
 static void checkCGIExtention(const std::string &cgi_extention) {
-  if (!(cgi_extention == "php" || cgi_extention == "py")) {
+  if (!(cgi_extention == "php" || cgi_extention == "py" || cgi_extention == "bla")) {
     throw FAIL;
   }
 }
 
-static void checkCGIPath(const std::string &cgi_path) {
-  if (access(cgi_path.c_str(), X_OK | F_OK) == -1) {
-    throw FAIL;
-  }
-}
 
-void LocationBlock::checkSemantics(void) const {
+void LocationBlock::checkSemantics() const {
   checkURL(url_);
   checkRootDir(root_dir_);
-  checkAllowMethod(allowed_method_);
+  checkAllowedMethod(allowed_method_);
   checkDirectoryListing(directory_listing_);
   checkCGIExtention(cgi_extension_);
-  checkCGIPath(cgi_path_);
 }
 
 void LocationBlock::parseLocationBlock(std::fstream &file) {
@@ -106,15 +100,40 @@ void LocationBlock::parseLocationBlock(std::fstream &file) {
     } else if (tmp_vec[0] == "cgi_extension" && tmp_vec.size() == 2) {
       cgi_extension_ = tmp_vec[1];
       error_flag |= (1 << 4);
-    } else if (tmp_vec[0] == "cgi_path" && tmp_vec.size() == 2) {
-      cgi_path_ = tmp_vec[1];
-      error_flag |=  (1 << 5);
     } else if (tmp_vec[0] == "redirection" && tmp_vec.size() == 2) {
       redirection_ = tmp_vec[1];
-      error_flag |=  (1 << 6);
+      error_flag |=  (1 << 5);
     }
   }
-  if (!(error_flag == 63 || error_flag == 127) || !brace.empty()) {
+  if (!(error_flag == 31 || error_flag == 63) || !brace.empty()) {
     throw FAIL;	
   }
+}
+
+std::string LocationBlock::getUrl() const {
+  return url_;
+}
+
+std::string LocationBlock::getRootDir() const {
+  return root_dir_;
+}
+
+std::set<std::string> LocationBlock::getAllowedMethod() const {
+  return allowed_method_;
+}
+
+std::string LocationBlock::getDirectoryListing() const {
+  return directory_listing_;
+}
+
+std::string LocationBlock::getIndex() const {
+  return index_;
+}
+
+std::string LocationBlock::getCgiExention() const {
+  return cgi_extension_;
+}
+
+std::string LocationBlock::getRedirection() const {
+  return redirection_;
 }
