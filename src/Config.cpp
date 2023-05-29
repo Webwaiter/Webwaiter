@@ -8,8 +8,7 @@ Config::Config(const char *file_path) {
   try {
     parseConfigFile(file_path);
     checkSemantics();
-  }
-  catch(int) {
+  } catch(int) {
     throw FAIL;
   }
 }
@@ -28,8 +27,8 @@ static void checkBracePair(std::vector<std::string> &tmp_vec, std::stack<std::st
   }
 }
 
-static void checkHTTPVersion(std::string http_version) {
-  if (http_version != "1.1") {
+static void checkHttpVersion(std::string http_version) {
+  if (http_version != "HTTP/1.1") {
     throw FAIL;
   }
 }
@@ -40,7 +39,7 @@ static void checkStatusPath(std::string status_path) {
   }
 }
 
-static void checkMIMEPath(std::string mime_path) {
+static void checkMimePath(std::string mime_path) {
   if (access(mime_path.c_str(), R_OK | F_OK) == -1) {
     throw FAIL;
   }
@@ -52,11 +51,18 @@ static void checkTimeout(int timeout) {
   }
 }
 
-void Config::checkSemantics(void) const {
-  checkHTTPVersion(http_version_);
+static void checkCgiPath(const std::string &cgi_path) {
+  if (access(cgi_path.c_str(), X_OK | F_OK) == -1) {
+    throw FAIL;
+  }
+}
+
+void Config::checkSemantics() const {
+  checkHttpVersion(http_version_);
   checkStatusPath(status_path_);
-  checkMIMEPath(mime_path_);
+  checkMimePath(mime_path_);
   checkTimeout(timeout_);
+  checkCgiPath(cgi_path_)
 }
 
 void Config::parseConfigFile(const char *file_path) {
@@ -96,7 +102,7 @@ void Config::parseConfigFile(const char *file_path) {
       error_flag |= (1 << 3);
     } else if (tmp_vec[0] == "mime_path" && tmp_vec.size() == 2) {
       mime_path_ = tmp_vec[1];
-      parseMIMEFile(mime_path_.c_str());
+      parseMimeFile(mime_path_.c_str());
       error_flag |= (1 << 4);
     } else if (tmp_vec[0] == "timeout" && tmp_vec.size() == 2) {
       for (int i = 0; i < tmp_vec[1].size(); ++i) {
@@ -106,9 +112,15 @@ void Config::parseConfigFile(const char *file_path) {
       }
       timeout_ = atoi(tmp_vec[1].c_str());
       error_flag |= (1 << 5);
+    } else if (tmp_vec[0] == "cgi_version" && tmp_vec.size() == 2) {
+      cgi_version_ = tmp_vec[1];
+      error_flag |= (1 << 6);
+    } else if (tmp_vec[0] == "cgi_path" && tmp_vec.size() == 2) {
+      cgi_path_ = tmp_vec[1];
+      error_flag |= (1 << 7);
     }
   }
-  if (!(error_flag == 63) || !brace.empty()) {
+  if (!(error_flag == 255) || !brace.empty()) {
     throw FAIL;
   }
 }
@@ -129,12 +141,12 @@ void Config::parseStatusFile(const char *file_path) {
       continue;
     }
     if (tmp_vec.size() == 2) {
-      status_messages_[atoi(tmp_vec[0].c_str())] = tmp_vec[1];
+      status_messages_[tmp_vec[0]] = tmp_vec[1];
     }
   }
 }
 
-void Config::parseMIMEFile(const char *file_path) {
+void Config::parseMimeFile(const char *file_path) {
   std::fstream file;
 
   file.open(file_path, std::fstream::in);
@@ -157,14 +169,34 @@ void Config::parseMIMEFile(const char *file_path) {
   }
 }
 
-std::string Config::getServerProgramName(void) const {
+std::string Config::getServerProgramName() const {
   return server_program_name_;
 }
 
-std::string Config::getHttpVersion(void) const {
+std::string Config::getHttpVersion() const {
   return http_version_;
 }
 
-std::vector<ServerBlock> Config::getServerBlocks(void) const {
+std::string Config::getCgiVersion() const {
+  return cgi_version_;
+}
+
+std::vector<ServerBlock> Config::getServerBlocks() const {
   return server_blocks_;
+}
+
+int Config::getTimeout() const {
+  return timeout_;
+}
+
+std::string Config::getCgiPath() const {
+  return cgi_path_;
+}
+
+std::map<std::string, std::string> Config::getStausMessages() const {
+  return status_messages_;
+}
+
+std::map<std::string, std::string> Config::getMimeTypes() const {
+  return mime_types_;
 }
