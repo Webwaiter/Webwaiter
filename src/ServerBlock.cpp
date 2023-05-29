@@ -60,7 +60,7 @@ static void checkServerIP(std::string server_ip) {
         throw FAIL;
       }
     }
-    double token = strtod(ip[i].c_str(), NULL);
+    long token = strtol(ip[i].c_str(), NULL, 10);
     if (!(token >= 0 && token <= 255)) {
       throw FAIL;
     }
