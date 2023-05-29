@@ -6,6 +6,40 @@
 using std::cout;
 using std::endl;
 
+char **Connection::setCgiArguments() {
+}
+
+char **Connection::setMetaVariables() {
+  std::map<std::string, std::string> env;
+  env["AUTH_TYPE"] = "";
+  env["REQUEST_URI"] = request_message_.getUri();
+  env["QUERY_STRING"] = env["REQUEST_URI"];
+  env["CONTENT_LENGTH"] = request_message_.getContentLength();
+  env["CONTENT_TYPE"] = request_message_.getContentType();
+  env["GATEWAY_INTERFACE"] = server_config_.getCgiVersion();
+  env["DOCUMENT_ROOT"] = location_->getRootDir();
+  env["REQUEST_METHOD"] = request_message_.getMethod();
+  env["SERVER_NAME"] = server_->getServerName();
+  env["SERVER_PORT"] = server_->getServerPort();
+  env["SERVER_PROTOCOL"] = server_config_.getHttpVersion();
+  env["SERVER_SOFTWARE"] = server_config_.getServerProgramName();
+  env["REMOTE_ADDR"] = client_.getAddress();
+  env["REMOTE_IDENT"] = "";
+  env["REMOTE_USER"] = "";
+  env["REMOTE_HOST"] = env["REMOTE_ADDR"];
+  env["SCRIPT_NAME"] = env["REQUEST_URI"];
+  env["SCRIPT_FILENAME"] = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
+  env["PATH_INFO"] = env["SCRIPT_FILENAME"];
+  env["PATH_TRANSLATED"] = env["PATH_INFO"];
+  int n = env.size();
+  char **ret = new char*[n + 1]();
+  for (std::map<std::string, std::string>::iterator it = env.begin();
+       it != env.end(); ++it) {
+    string s = it->first + '=' + it->second;
+
+  }
+}
+
 ReturnState Connection::executeCGIProcess() {
   int to_cgi[2];
   int from_cgi[2];
@@ -36,14 +70,10 @@ ReturnState Connection::executeCGIProcess() {
       close(fd);
     }
 
-    // setting up for exec
-    char *cgi_pathname = server_config_.getCGIPath(url);  // Config& config
-    char **cgi_argv = new char*[2]();
-    cgi_argv[0] = cgi_pathname;
-    char **meta_variables = new char*[kMetaVariableCount + 1]();  // kMetaVariableCount
-
     // exec
-    if (execve(cgi_pathname, cgi_argv, meta_variables) < 0) {
+    char **cgi_argv = setCgiArguments();
+    char **meta_variables = setMetaVariables();
+    if (execve(cgi_argv[0], cgi_argv, meta_variables) < 0) {
       return FAIL;
     }
   }
