@@ -33,6 +33,12 @@ static void checkHttpVersion(std::string http_version) {
   }
 }
 
+static void checkCgiVersion(std::string cgi_version) {
+  if (cgi_version != "CGI/1.1") {
+    throw FAIL;
+  }
+}
+
 static void checkStatusPath(std::string status_path) {
   if (access(status_path.c_str(), R_OK | F_OK) == -1) {
     throw FAIL;
@@ -59,10 +65,11 @@ static void checkCgiPath(const std::string &cgi_path) {
 
 void Config::checkSemantics() const {
   checkHttpVersion(http_version_);
+  checkCgiVersion(cgi_version_);
   checkStatusPath(status_path_);
   checkMimePath(mime_path_);
   checkTimeout(timeout_);
-  checkCgiPath(cgi_path_)
+  checkCgiPath(cgi_path_);
 }
 
 void Config::parseConfigFile(const char *file_path) {
