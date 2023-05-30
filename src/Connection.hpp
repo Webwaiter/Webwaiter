@@ -3,7 +3,11 @@
 #ifndef SRC_CONNECTION_HPP_
 #define SRC_CONNECTION_HPP_
 
+
+#include <sys/event.h>
 #include <netinet/in.h>
+
+#include <vector>
 #include <queue>
 #include <string>
 
@@ -28,8 +32,9 @@ class Connection {
   void executeCGIProcess();
   void openStaticPage();
   void writingToPipe();
-  void readHandler(int fd);
-  void writeHandler(int fd);
+  ReturnState writeHandler(const struct kevent &event);
+  ReturnState readHandler(const struct kevent &event);
+  void closeConnection();
 
  private:
   enum State {
@@ -56,6 +61,10 @@ class Connection {
   LocationBlock *cur_location_;
   struct sockaddr_in client_addr_;
   int response_status_code_;
+  std::vector<int> fd_vec_;
+  ssize_t read_;
+  size_t read_cnt_;
+  intptr_t leftover_data_;
 };
 
 #endif  // SRC_CONNECTION_HPP
