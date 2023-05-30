@@ -5,12 +5,12 @@
 
 
 #include <sys/event.h>
-#include <sys/time.h>
 #include <netinet/in.h>
 
 #include <vector>
 #include <queue>
 #include <string>
+#include <ctime>
 
 #include "src/Config.hpp"
 #include "src/ServerBlock.hpp"
@@ -72,6 +72,7 @@ class Connection {
   LocationBlock *cur_location_;
 
   struct sockaddr_in client_addr_;
+  time_t time_;
   State state_;
 };
 

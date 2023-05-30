@@ -14,7 +14,7 @@ Connection::Connection(int connection_socket, Kqueue& kqueue, const Config& conf
     : connection_socket_(connection_socket), response_status_code_(200), kqueue_(kqueue), config_(config),
       read_(0), read_cnt_(0), leftover_data_(0), write_buffer_(NULL), written_(0), write_buffer_size_(0),
       request_message_(response_status_code_), response_message_(response_status_code_, config_), cur_server_(NULL),
-      cur_location_(NULL) {}
+      cur_location_(NULL), time_(time(NULL)) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
