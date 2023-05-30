@@ -3,6 +3,8 @@
 #ifndef SRC_UTILS_HPP_
 #define SRC_UTILS_HPP_
 
+#include <sys/time.h>
+
 #include <string>
 #include <vector>
 
