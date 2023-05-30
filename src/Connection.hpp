@@ -5,6 +5,7 @@
 
 
 #include <sys/event.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 
 #include <vector>
@@ -65,6 +66,7 @@ class Connection {
   ssize_t read_;
   size_t read_cnt_;
   intptr_t leftover_data_;
+  struct timeval time_;
 };
 
 #endif  // SRC_CONNECTION_HPP
