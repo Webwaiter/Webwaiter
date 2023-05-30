@@ -16,7 +16,7 @@
 #include "src/utils.hpp"
 
 Server::Server(const Config &config, const std::vector<int> &listen_sockets)
-    : config_(config), listen_sockets_(listen_sockets) {
+    : config_(config), listen_sockets_(listen_sockets), kqueue_() {
   for (size_t i = 0; i < listen_sockets.size(); ++i) {
     kqueue_.setEvent(listen_sockets[i], EVFILT_READ, EV_ADD, 0, 0, NULL);
   }
@@ -28,7 +28,7 @@ Connection *Server::acceptClient(int listen_socket) {
     throw 1;
   }
   fcntl(connection_socket, F_SETFL, O_NONBLOCK);
-  Connection *p = new Connection(connection_socket, kqueue_);
+  Connection *p = new Connection(connection_socket, kqueue_, config_);
   kqueue_.setEvent(connection_socket, EVFILT_READ, EV_ADD, 0, 0, p);
   kqueue_.setEvent(connection_socket, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, p);
   return p;
@@ -102,4 +102,12 @@ void Server::run() {
       }
     }
   }
+}
+
+const Config &Server::getConfig() const {
+  return config_;
+}
+
+const Kqueue &Server::getKqueue() const {
+  return kqueue_;
 }

@@ -3,12 +3,17 @@
 #ifndef SRC_CONNECTION_HPP_
 #define SRC_CONNECTION_HPP_
 
+
 #include <sys/event.h>
+#include <netinet/in.h>
 
 #include <vector>
 #include <queue>
 #include <string>
 
+#include "src/Config.hpp"
+#include "src/ServerBlock.hpp"
+#include "src/LocationBlock.hpp"
 #include "src/Kqueue.hpp"
 #include "src/RequestMessage.hpp"
 #include "src/ResponseMessage.hpp"
@@ -16,12 +21,13 @@
 
 class Connection {
  public:
-  Connection(int connection_socket, const Kqueue& kqueue);
+  Connection(int connection_socket, const Kqueue& kqueue, const Config& config);
   int getConnectionSocket() const;
   char *getReadBuffer();
   ReturnState work();
   bool checkReadSuccess();
   bool checkTimeOut();
+  void setConfigInfo();
   void parsingRequestMessage();
   void executeCGIProcess();
   void openStaticPage();
@@ -44,10 +50,16 @@ class Connection {
 
   int connection_socket_;
   char read_buffer_[8096];
+  ssize_t read_;
+  
   RequestMessage request_message_;
   ResponseMessage response_message_;
   State state_;
-  Kqueue kqueue_;
+  const Kqueue &kqueue_;
+  const Config &config_;
+  ServerBlock *cur_server_;
+  LocationBlock *cur_location_;
+  struct sockaddr_in client_addr_;
   int response_status_code_;
   std::vector<int> fd_vec_;
   ssize_t read_;

@@ -10,9 +10,9 @@
 #include "src/Server.hpp"
 #include "src/utils.hpp"
 
-Connection::Connection(int connection_socket, const Kqueue& kqueue)
+Connection::Connection(int connection_socket, const Kqueue& kqueue, const Config& config)
     : connection_socket_(connection_socket), request_message_(response_status_code_), response_message_(response_status_code_), kqueue_(kqueue),
-      response_status_code_(200), read_(0), read_cnt_(0), leftover_data_(0) {}
+      config_(config), response_status_code_(200), read_(0), read_cnt_(0), leftover_data_(0) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
@@ -21,14 +21,17 @@ int Connection::getConnectionSocket() const {
 void Connection::parsingRequestMessage() {
   /*
   // 1. 파싱
-  request_message_.parse();
+  ReturnState ret = request_message_.parse(read_buffer_);
+  if (ret == AGAIN) {
+    return;
+  }
 
-  
-  if (isCGIExtension) {
+  if (isCGIExtension()) {
     executeCGIProcess();
   } else {
     openStaticPage();
   }
+
   */
 }
 
@@ -46,24 +49,16 @@ ReturnState Connection::work(void) {
     }
   }
   switch (state_) {
-    case PARSING_REQUEST_MESSAGE:
-      parsingRequestMessage();
+    case PARSING_REQUEST_MESSAGE:parsingRequestMessage();
       break;
-    case HANDLING_STATIC_PAGE:
+    case HANDLING_STATIC_PAGE:break;
+    case HANDLING_DYNAMIC_PAGE_HEADER:break;
+    case HANDLING_DYNAMIC_PAGE_BODY:break;
+    case WRITING_TO_PIPE:writingToPipe();
       break;
-    case HANDLING_DYNAMIC_PAGE_HEADER:
-      break;
-    case HANDLING_DYNAMIC_PAGE_BODY:
-      break;
-    case WRITING_TO_PIPE:
-      writingToPipe();
-      break;
-    case WRITING_STATIC_PAGE:
-      break;
-    case WRITING_DYNAMIC_PAGE_HEADER:
-      break;
-    case WRITING_DYNAMIC_PAGE_BODY:
-      break;
+    case WRITING_STATIC_PAGE:break;
+    case WRITING_DYNAMIC_PAGE_HEADER:break;
+    case WRITING_DYNAMIC_PAGE_BODY:break;
   }
   return SUCCESS;
 }

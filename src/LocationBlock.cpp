@@ -110,30 +110,30 @@ void LocationBlock::parseLocationBlock(std::fstream &file) {
   }
 }
 
-std::string LocationBlock::getUrl() const {
+const std::string &LocationBlock::getUrl() const {
   return url_;
 }
 
-std::string LocationBlock::getRootDir() const {
+const std::string &LocationBlock::getRootDir() const {
   return root_dir_;
 }
 
-std::set<std::string> LocationBlock::getAllowedMethod() const {
+const std::set<std::string> &LocationBlock::getAllowedMethod() const {
   return allowed_method_;
 }
 
-std::string LocationBlock::getDirectoryListing() const {
+const std::string &LocationBlock::getDirectoryListing() const {
   return directory_listing_;
 }
 
-std::string LocationBlock::getIndex() const {
+const std::string &LocationBlock::getIndex() const {
   return index_;
 }
 
-std::string LocationBlock::getCgiExention() const {
+const std::string &LocationBlock::getCgiExention() const {
   return cgi_extension_;
 }
 
-std::string LocationBlock::getRedirection() const {
+const std::string &LocationBlock::getRedirection() const {
   return redirection_;
 }

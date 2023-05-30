@@ -130,26 +130,26 @@ void ServerBlock::parseServerBlock(std::fstream &file) {
   }
 }
 
-std::map<std::string, std::string> ServerBlock::getDefaultErrorPages(void) const {
+const std::map<std::string, std::string> &ServerBlock::getDefaultErrorPages(void) const {
   return default_error_pages_;
 }
 
-int ServerBlock::getClientBodySize() const {
+const int &ServerBlock::getClientBodySize() const {
   return client_body_size_;
 }
 
-std::string ServerBlock::getServerIP() const {
+const std::string &ServerBlock::getServerIP() const {
   return server_ip_;
 }
 
-int ServerBlock::getServerPort() const {
+const int &ServerBlock::getServerPort() const {
   return server_port_;
 }
 
-std::string ServerBlock::getServerName() const {
+const std::string &ServerBlock::getServerName() const {
   return server_name_;
 }
 
-std::vector<LocationBlock> ServerBlock::getLocationBlocks() const {
+const std::vector<LocationBlock> &ServerBlock::getLocationBlocks() const {
   return location_blocks_;
 }

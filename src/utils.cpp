@@ -32,3 +32,14 @@ std::string skipCharset(std::string input, std::string charset) {
 		return input;
 	}
 }
+
+void trim(std::string& str)
+{
+  size_t left_pos = str.find_first_not_of(" ");
+  if (left_pos != std::string::npos)
+    str.erase(0, left_pos);
+
+  size_t right_pos = str.find_last_not_of(" ");
+  if (right_pos != std::string::npos)
+    str.erase(right_pos + 1);
+}

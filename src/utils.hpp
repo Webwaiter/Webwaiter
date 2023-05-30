@@ -15,5 +15,7 @@ enum ReturnState {
 
 std::vector<std::string> split(std::string input, std::string delimiter);
 std::string skipCharset(std::string input, std::string charset);
+void trim(std::string& str);
+
 
 #endif //SRC_UTILS_HPP_
