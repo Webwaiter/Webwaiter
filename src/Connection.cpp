@@ -21,14 +21,17 @@ int Connection::getConnectionSocket() const {
 void Connection::parsingRequestMessage() {
   /*
   // 1. 파싱
-  request_message_.parse();
+  ReturnState ret = request_message_.parse(read_buffer_);
+  if (ret == AGAIN) {
+    return;
+  }
 
-  
-  if (isCGIExtension) {
+  if (isCGIExtension()) {
     executeCGIProcess();
   } else {
     openStaticPage();
   }
+
   */
 }
 
@@ -46,26 +49,22 @@ ReturnState Connection::work(void) {
     }
   }
   switch (state_) {
-    case PARSING_REQUEST_MESSAGE:
-      parsingRequestMessage();
+    case PARSING_REQUEST_MESSAGE:parsingRequestMessage();
       break;
-    case HANDLING_STATIC_PAGE:
+    case HANDLING_STATIC_PAGE:break;
+    case HANDLING_DYNAMIC_PAGE_HEADER:break;
+    case HANDLING_DYNAMIC_PAGE_BODY:break;
+    case WRITING_TO_PIPE:writingToPipe();
       break;
-    case HANDLING_DYNAMIC_PAGE_HEADER:
-      break;
-    case HANDLING_DYNAMIC_PAGE_BODY:
-      break;
-    case WRITING_TO_PIPE:
-      writingToPipe();
-      break;
-    case WRITING_STATIC_PAGE:
-      break;
-    case WRITING_DYNAMIC_PAGE_HEADER:
-      break;
-    case WRITING_DYNAMIC_PAGE_BODY:
-      break;
+    case WRITING_STATIC_PAGE:break;
+    case WRITING_DYNAMIC_PAGE_HEADER:break;
+    case WRITING_DYNAMIC_PAGE_BODY:break;
   }
   return SUCCESS;
+}
+
+void Connection::readHandler(int fd) {
+  read_ = read(fd, read_buffer_, sizeof(read_buffer_));
 }
 
 void Connection::writeHandler(int fd) {
