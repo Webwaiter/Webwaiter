@@ -15,13 +15,13 @@
 class LocationBlock {
  public:
   explicit LocationBlock(std::fstream &file, std::string url);
-  std::string getUrl() const;
-  std::string getRootDir() const;
-  std::set<std::string> getAllowedMethod() const;
-  std::string getDirectoryListing() const;
-  std::string getIndex() const;
-  std::string getCgiExention() const;
-  std::string getRedirection() const;
+  const std::string &getUrl() const;
+  const std::string &getRootDir() const;
+  const std::set<std::string> &getAllowedMethod() const;
+  const std::string &getDirectoryListing() const;
+  const std::string &getIndex() const;
+  const std::string &getCgiExention() const;
+  const std::string &getRedirection() const;
 
  private: 
   void parseLocationBlock(std::fstream &file);

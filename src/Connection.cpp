@@ -10,9 +10,9 @@
 #include "src/Server.hpp"
 #include "src/utils.hpp"
 
-Connection::Connection(int connection_socket, const Kqueue& kqueue)
-    : connection_socket_(connection_socket), request_message_(response_status_code_), response_message_(response_status_code_),
-      kqueue_(kqueue), response_status_code_(200) {}
+Connection::Connection(int connection_socket, const Kqueue& kqueue, const Config& config)
+    : connection_socket_(connection_socket), request_message_(response_status_code_), response_message_(response_status_code_), kqueue_(kqueue),
+      config_(config), response_status_code_(200) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
