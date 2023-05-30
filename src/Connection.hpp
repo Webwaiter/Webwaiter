@@ -56,7 +56,7 @@ class Connection {
   RequestMessage request_message_;
   ResponseMessage response_message_;
   State state_;
-  const Kqueue &kqueue_;
+  Kqueue &kqueue_;
   const Config &config_;
   ServerBlock *cur_server_;
   LocationBlock *cur_location_;
