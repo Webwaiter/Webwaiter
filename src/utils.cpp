@@ -41,16 +41,3 @@ void trim(std::string& str)
   if (right_pos != std::string::npos)
     str.erase(right_pos + 1);
 }
-
-long	getTimeOut(struct timeval base_timeval)
-{
-	struct timeval	cur_timeval;
-	long			cur_time;
-	long			base_time;
-
-	if (gettimeofday(&cur_timeval, NULL) != 0)
-		return (-1);
-	cur_time = cur_timeval.tv_sec * 1000000L + cur_timeval.tv_usec;
-	base_time = base_timeval.tv_sec * 1000000L + base_timeval.tv_usec;
-	return (cur_time - base_time);
-}

@@ -72,7 +72,6 @@ class Connection {
   LocationBlock *cur_location_;
 
   struct sockaddr_in client_addr_;
-  struct timeval time_;
   State state_;
 };
 

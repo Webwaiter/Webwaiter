@@ -18,7 +18,6 @@ enum ReturnState {
 std::vector<std::string> split(std::string input, std::string delimiter);
 std::string skipCharset(std::string input, std::string charset);
 void trim(std::string& str);
-long getTimeOut(struct timeval base_timeval);
 
 
 #endif //SRC_UTILS_HPP_
