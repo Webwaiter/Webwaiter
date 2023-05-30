@@ -41,3 +41,11 @@ void trim(std::string& str)
   if (right_pos != std::string::npos)
     str.erase(right_pos + 1);
 }
+
+void updateTime(time_t &cur_time) {
+  cur_time = time(NULL);
+}
+
+double getTimeOut(time_t &base_time) {
+  return (difftime(time(NULL), base_time));
+}
