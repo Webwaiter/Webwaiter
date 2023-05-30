@@ -22,7 +22,7 @@
 
 class Connection {
  public:
-  Connection(int connection_socket, const Kqueue& kqueue, const Config& config);
+  Connection(int connection_socket, Kqueue& kqueue, const Config& config);
   int getConnectionSocket() const;
   char *getReadBuffer();
   ReturnState work();
@@ -50,23 +50,30 @@ class Connection {
   };
 
   int connection_socket_;
-  char read_buffer_[8096];
-  ssize_t read_;
-  
-  RequestMessage request_message_;
-  ResponseMessage response_message_;
-  State state_;
+  std::vector<int> fd_vec_;
+  int response_status_code_;
+
   Kqueue &kqueue_;
   const Config &config_;
-  ServerBlock *cur_server_;
-  LocationBlock *cur_location_;
-  struct sockaddr_in client_addr_;
-  int response_status_code_;
-  std::vector<int> fd_vec_;
+
+  char read_buffer_[8096];
   ssize_t read_;
   size_t read_cnt_;
   intptr_t leftover_data_;
+  
+  char *write_buffer_;
+  ssize_t written_;
+  size_t write_buffer_size_;
+
+  RequestMessage request_message_;
+  ResponseMessage response_message_;
+
+  ServerBlock *cur_server_;
+  LocationBlock *cur_location_;
+
+  struct sockaddr_in client_addr_;
   struct timeval time_;
+  State state_;
 };
 
 #endif  // SRC_CONNECTION_HPP
