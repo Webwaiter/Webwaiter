@@ -16,7 +16,7 @@ static void toLower(char &c) {
 }
 
 RequestMessage::RequestMessage(int &response_status_code_)
-    : response_status_code_(response_status_code_), state_(kMethod), content_length_(-1), chunk_size_(-1) {}
+    : response_status_code_(response_status_code_), state_(kMethod), content_length_(0), chunk_size_(0) {}
 
 void RequestMessage::appendLeftover(const char *buffer, size_t n) {
   for (size_t i = 0; i < n; ++i) {
@@ -239,6 +239,7 @@ void RequestMessage::parseChunkSize() {
     state_ = kTrailerField;
     return;
   }
+  content_length_ += chunk_size_;
   state_ = kChunkData;
 }
 
@@ -283,6 +284,10 @@ void RequestMessage::removeChunkedInHeader() {
   std::string &value = it->second;
   size_t pos = value.find("chunked");
   value.erase(pos, 7);
+
+  std::stringstream ss;
+  ss << content_length_;
+  headers_["content-length"] = ss.str();
 }
 
 const std::string &RequestMessage::getMethod(void) const {
