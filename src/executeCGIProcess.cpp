@@ -8,16 +8,6 @@
 using std::cout;
 using std::endl;
 
-static char **setCgiArguments(std::string &cgi_path, std::string &script_filename) {
-  char** argv = new char*[3];
-  argv[0] = new char[cgi_path.size() + 1];
-  std::strcpy(argv[0], cgi_path.c_str());
-  argv[1] = new char[script_filename.size() + 1];
-  std::strcpy(argv[1], script_filename.c_str());
-  argv[2] = 0;
-  return argv;
-}
-
 static std::string getQueryString(std::string &uri) {
   size_t query_pos = uri.find('?');
   if (query_pos == std::string::npos) {
@@ -70,7 +60,17 @@ char **Connection::setMetaVariables(std::map<std::string, std::string> &env) {
   return meta_variables;
 }
 
-ReturnState Connection::executeCGIProcess() {
+static char **setCgiArguments(std::string &cgi_path, std::string &script_filename) {
+  char** argv = new char*[3];
+  argv[0] = new char[cgi_path.size() + 1];
+  std::strcpy(argv[0], cgi_path.c_str());
+  argv[1] = new char[script_filename.size() + 1];
+  std::strcpy(argv[1], script_filename.c_str());
+  argv[2] = 0;
+  return argv;
+}
+
+ReturnState Connection::executeCgiProcess() {
   int to_cgi[2];
   int from_cgi[2];
   if (pipe(to_cgi) < 0 || pipe(from_cgi) < 0) {
