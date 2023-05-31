@@ -11,8 +11,12 @@ typedef std::map<std::string, std::string>::iterator map_iterator;
 static const char kCrlf[] = {'\r', '\n'};
 static const size_t kCrlfLength = 2;
 
+static void toLower(char &c) {
+  c = std::tolower(c);
+}
+
 RequestMessage::RequestMessage(int &response_status_code_)
-    : response_status_code_(response_status_code_), state_(kMethod), content_length_(-1), chunked_length_(-1) {}
+    : response_status_code_(response_status_code_), state_(kMethod), content_length_(-1), chunk_size_(-1) {}
 
 void RequestMessage::appendLeftover(const char *buffer, size_t n) {
   for (size_t i = 0; i < n; ++i) {
@@ -29,7 +33,7 @@ bool RequestMessage::writeDone() {
 }
 
 ReturnState RequestMessage::parse(const char *buffer, size_t read) {
-  if (read <= 0)
+  if (read <= 0 && leftover_.empty())
     return AGAIN;
 
   appendLeftover(buffer, read);
@@ -46,9 +50,9 @@ ReturnState RequestMessage::parse(const char *buffer, size_t read) {
   if (parseContentLengthBody() == SUCCESS) {
     return SUCCESS;
   }
-//  if (parseChunkedBody() == SUCCESS) {
-//    return SUCCESS
-//  }
+  if (parseChunkBody() == SUCCESS) {
+    return SUCCESS;
+  }
   return AGAIN;
 }
 
@@ -91,7 +95,6 @@ ReturnState RequestMessage::parseUri() {
   uri_.insert(uri_.begin(), leftover_.begin(), space_pos);
   leftover_.erase(leftover_.begin(), space_pos + 1);
   // Todo: uri 분석
-
   state_ = kProtocol;
   return AGAIN;
 }
@@ -106,9 +109,12 @@ ReturnState RequestMessage::parseProtocol() {
     return AGAIN;
 
   protocol_.insert(protocol_.begin(), leftover_.begin(), crlf_pos);
-  // if (protocol_ != "HTTP/1.1")
-  //  return SUCCESS;
-  //   Todo: protocol 분석
+  std::for_each(protocol_.begin(), protocol_.end(), toLower);
+  if (protocol_ != "http/1.1") {
+    state_ = kParseDone;
+    response_status_code_ = 400;
+    return SUCCESS;
+  }
   state_ = kSkipCrlf;
   leftover_.erase(leftover_.begin(), crlf_pos + 2);
   return AGAIN;
@@ -143,15 +149,10 @@ ReturnState RequestMessage::skipCrlf() {
   }
 }
 
-static void toLower(char &c) {
-  c = std::tolower(c);
-}
-
 ReturnState RequestMessage::parseHeaderLine() {
   if (state_ != kHeaderLine)
     return AGAIN;
 
-  //Todo: value에 \r \n \0 있으면 예외 처리
   vector_iterator line_pos;
   while (true) {
     line_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
@@ -168,14 +169,19 @@ ReturnState RequestMessage::parseHeaderLine() {
 
     size_t colon_pos = field_line.find(':');
     if (colon_pos != std::string::npos) {
-      // Todo: field name에 공백이 있으면 예외 처리
       std::string field_name(field_line.substr(0, colon_pos));
       if (field_name.find(' ') != std::string::npos) {
         response_status_code_ = 400;
         return SUCCESS;
       }
       std::for_each(field_name.begin(), field_name.end(), toLower);
+
       std::string field_value(field_line.begin() + colon_pos + 1, field_line.end());
+      if (field_value.find('\0') != std::string::npos) {
+        state_ = kParseDone;
+        response_status_code_ = 400;
+        return SUCCESS;
+      }
       trim(field_value);
       headers_[field_name] = field_value;
     }
@@ -195,7 +201,8 @@ ReturnState RequestMessage::checkBodyType() {
     state_ = kContentLength;
   }
   if (chunked != headers_.end()) {
-    state_ = kChunked;
+    content_length_ = 0;
+    state_ = kChunkSize;
   }
   return AGAIN;
 }
@@ -204,13 +211,111 @@ ReturnState RequestMessage::parseContentLengthBody() {
   if (state_ != kContentLength) {
     return AGAIN;
   }
-
   if (leftover_.size() < content_length_) {
     return AGAIN;
   }
-
   body_.insert(body_.end(), leftover_.begin(), leftover_.begin() + content_length_);
   leftover_.erase(leftover_.begin(), leftover_.begin() + content_length_);
+  state_ = kParseDone;
+  return SUCCESS;
+}
+
+ReturnState RequestMessage::parseChunkBody() {
+  if (parseChunkSize() == SUCCESS) {
+    return SUCCESS;
+  }
+  if (parseChunkData() == SUCCESS) {
+    return SUCCESS;
+  }
+  if (parseTrailerField() == SUCCESS) {
+    return SUCCESS;
+  }
+  return AGAIN;
+}
+
+ReturnState RequestMessage::parseChunkSize() {
+  if (state_ != kChunkSize) {
+    return AGAIN;
+  }
+  vector_iterator crlf_pos;
+
+  crlf_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
+  if (crlf_pos == leftover_.end())
+    return AGAIN;
+
+  std::string chunk_size(leftover_.begin(), crlf_pos);
+  leftover_.erase(leftover_.begin(), crlf_pos + kCrlfLength);
+  if (chunk_size.empty()) {
+    state_ = kParseDone;
+    return SUCCESS;
+  }
+
+  char *end;
+  chunk_size_ = strtol(chunk_size.c_str(), &end, 16);
+  if (*end != '\0') {
+    response_status_code_ = 400;
+    state_ = kParseDone;
+    return SUCCESS;
+  }
+  if (chunk_size_ == 0) {
+    state_ = kTrailerField;
+    return AGAIN;
+  }
+  state_ = kChunkData;
+  return AGAIN;
+}
+
+ReturnState RequestMessage::parseChunkData() {
+  if (state_ != kChunkData) {
+    return AGAIN;
+  }
+  vector_iterator crlf_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
+  if (crlf_pos == leftover_.end())
+    return AGAIN;
+  body_.insert(body_.end(), leftover_.begin(), crlf_pos);
+  size_t insertedData = crlf_pos - leftover_.begin();
+  leftover_.erase(leftover_.begin(), crlf_pos + kCrlfLength);
+
+  // body 문법이 틀렸다면
+  if (insertedData != chunk_size_) {
+    response_status_code_ = 400;
+    return SUCCESS;
+  }
+  state_ = kChunkSize;
+  return AGAIN;
+}
+
+ReturnState RequestMessage::parseTrailerField() {
+  if (state_ != kTrailerField) {
+    return AGAIN;
+  }
+  vector_iterator line_pos;
+  while (true) {
+    line_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
+    if (line_pos == leftover_.end()) {
+      return AGAIN;
+    }
+
+    std::string field_line(leftover_.begin(), line_pos);
+    leftover_.erase(leftover_.begin(), line_pos + kCrlfLength);
+    if (field_line.empty()) {
+      break;
+    }
+    size_t colon_pos = field_line.find(':');
+    if (colon_pos != std::string::npos) {
+      std::string field_name(field_line.substr(0, colon_pos));
+      if (field_name.find(' ') != std::string::npos) {
+        response_status_code_ = 400;
+        state_ = kParseDone;
+        return SUCCESS;
+      }
+      std::for_each(field_name.begin(), field_name.end(), toLower);
+      std::string field_value(field_line.begin() + colon_pos + 1, field_line.end());
+      trim(field_value);
+      headers_[field_name] = field_value;
+    }
+  }
+  // Todo: Remove "chunked" from Transer-Encoding;
   state_ = kParseDone;
   return SUCCESS;
 }

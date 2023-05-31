@@ -30,7 +30,9 @@ class RequestMessage {
     kSkipCrlf,
     kHeaderLine,
     kContentLength,
-    kChunked,
+    kChunkSize,
+    kChunkData,
+    kTrailerField,
     kParseDone
   };
 
@@ -42,14 +44,17 @@ class RequestMessage {
   ReturnState parseHeaderLine();
   ReturnState checkBodyType();
   ReturnState parseContentLengthBody();
-  ReturnState parseChunkedBody();
+  ReturnState parseChunkBody();
+  ReturnState parseChunkSize();
+  ReturnState parseChunkData();
+  ReturnState parseTrailerField();
 
   ParseState state_;
   ssize_t written_;
 
   std::vector<char> leftover_;
   ssize_t content_length_;
-  ssize_t chunked_length_;
+  ssize_t chunk_size_;
 
   std::string method_;
   std::string uri_;
