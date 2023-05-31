@@ -31,6 +31,7 @@ class Connection {
   void setConfigInfo();
   void parsingRequestMessage();
   ReturnState handlingStaticPage();
+  ReturnState checkFileReadDone();
   void executeCGIProcess();
   void openStaticPage();
   void writingToPipe();
@@ -51,9 +52,9 @@ class Connection {
   };
 
   int connection_socket_;
-  int file_fd;
-  int pipe_read_fd;
-  int pipe_write_fd;
+  int file_fd_;
+  int pipe_read_fd_;
+  int pipe_write_fd_;
   int response_status_code_;
 
   Kqueue &kqueue_;
