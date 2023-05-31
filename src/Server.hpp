@@ -12,14 +12,16 @@
 class Server {
  public:
   Server(const Config &config, const std::vector<int> &listen_sockets);
+  const Config &getConfig() const;
+  const Kqueue &getKqueue() const;
   void run();
 
  private:
   Connection *acceptClient(int listen_socket);
   bool isListenSocketEvent(int catch_fd);
 
-  Config config_;
-  std::vector<int> listen_sockets_;
+  const Config &config_;
+  const std::vector<int> &listen_sockets_;
   Kqueue kqueue_;
 };
 

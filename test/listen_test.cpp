@@ -6,10 +6,11 @@
 #include <errno.h>
 
 #include <cstdio>
+#include <iostream>
 #include <cstdlib>
 #include <vector>
 
-#include "src/Config.hpp"
+#include "../src/Config.hpp" 
 #include "src/Server.hpp"
 #include "src/utils.hpp"
 
@@ -60,15 +61,18 @@ static void setupListenSocket(Config &config, std::vector<int> &listen_sockets) 
     listen_sockets.push_back(listen_socket);
   }
 }
-
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
   if (argc != 2) {
+    std::cout << "Usage : ./conf_test [file]\n";
     return 1;
   }
-  Config config(argv[1]);
-  std::vector<int> listen_socket;
-  setupListenSocket(config, listen_socket);
-
-  Server server(config, listen_socket);
-  server.run();
+  try {
+    Config test(argv[1]);
+    std::vector<int> listen_soket;
+    setupListenSocket(test, listen_soket);
+    std::cout << "done" << std::endl;
+  } catch (int) {
+    std::cout << "fail to construct class" << '\n';
+  } 
+  return 0;
 }

@@ -1,7 +1,5 @@
 // Copyright 2023 ean, hanbkim, jiyunpar
-
-#include <vector>
-#include <string>
+#include "src/utils.hpp"
 
 std::vector<std::string> split(std::string input, std::string delimiter_set) {
     std::vector<std::string> result;
@@ -31,4 +29,23 @@ std::string skipCharset(std::string input, std::string charset) {
 	} else {
 		return input;
 	}
+}
+
+void trim(std::string& str)
+{
+  size_t left_pos = str.find_first_not_of(" ");
+  if (left_pos != std::string::npos)
+    str.erase(0, left_pos);
+
+  size_t right_pos = str.find_last_not_of(" ");
+  if (right_pos != std::string::npos)
+    str.erase(right_pos + 1);
+}
+
+void updateTime(time_t &cur_time) {
+  cur_time = time(NULL);
+}
+
+double getTimeOut(time_t &base_time) {
+  return (difftime(time(NULL), base_time));
 }

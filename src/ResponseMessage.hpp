@@ -6,20 +6,18 @@
 
 class ResponseMessage {
  public:
-  explicit ResponseMessage(int &response_status_code);
+  explicit ResponseMessage(int &response_status_code, const Config& config);
   ResponseMessage &operator=(const ResponseMessage &rhs);
   std::string generateMessage() const;
 
  private:
-  std::string response_message_;
   ssize_t written_;
   std::string status_protocol_;
   int &response_status_code_;
+  const Config& config_;
   std::string status_message_;
   std::map<std::string, std::string> headers_;
+  std::vector<char> startline_header_;
   std::vector<char> body_;
+  std::vector<char> response_message_;
 };
-/*
-HTTP/1.1 200 OK
-header ...
-*/
