@@ -68,6 +68,11 @@ static void checkServerIP(std::string server_ip) {
 }
 
 static void checkServerPort(std::string server_port) {
+  for (size_t i = 0; i < server_port.size(); ++i) {
+    if (!isdigit(server_port[i])) {
+      throw FAIL;
+    }
+  }
   int port = atoi(server_port.c_str());
   if (!(port >= 0 && port <= 65535)) {
     throw FAIL;
