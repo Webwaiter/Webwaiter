@@ -36,21 +36,22 @@ class RequestMessage {
     kParseComplete
   };
 
-  void parseComplete(int response_status_code);
-
   void parseStartLine();
   void parseMethod();
   void parseUri();
   void parseProtocol();
   void skipCrlf();
   void parseHeaderLine();
-  void parseField(std::string &field);
-  void checkBodyType();
   void parseContentLengthBody();
   void parseChunkBody();
   void parseChunkSize();
   void parseChunkData();
   void parseTrailerField();
+
+  void parseComplete(int response_status_code);
+  void checkBodyType();
+  void parseField(std::string &field);
+  void removeChunkedInHeader();
 
   ParseState state_;
   ssize_t written_;

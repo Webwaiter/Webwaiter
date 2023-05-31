@@ -270,12 +270,19 @@ void RequestMessage::parseTrailerField() {
     std::string field_line(leftover_.begin(), line_pos);
     leftover_.erase(leftover_.begin(), line_pos + kCrlfLength);
     if (field_line.empty()) {
+      removeChunkedInHeader();
       parseComplete(200);
       return;
     }
     parseField(field_line);
   }
-  // Todo: Remove "chunked" from Transer-Encoding;
+}
+
+void RequestMessage::removeChunkedInHeader() {
+  map_iterator it = headers_.find("transfer-encoding");
+  std::string &value = it->second;
+  size_t pos = value.find("chunked");
+  value.erase(pos, 7);
 }
 
 const std::string &RequestMessage::getMethod(void) const {
