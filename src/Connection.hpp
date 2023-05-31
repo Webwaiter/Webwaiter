@@ -30,6 +30,7 @@ class Connection {
   bool checkTimeOut();
   void setConfigInfo();
   void parsingRequestMessage();
+  ReturnState handlingStaticPage();
   void executeCGIProcess();
   void openStaticPage();
   void writingToPipe();
@@ -50,7 +51,9 @@ class Connection {
   };
 
   int connection_socket_;
-  std::vector<int> fd_vec_;
+  int file_fd;
+  int pipe_read_fd;
+  int pipe_write_fd;
   int response_status_code_;
 
   Kqueue &kqueue_;

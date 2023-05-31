@@ -13,7 +13,7 @@
 Connection::Connection(int connection_socket, Kqueue& kqueue, const Config& config)
     : connection_socket_(connection_socket), response_status_code_(200), kqueue_(kqueue), config_(config),
       read_(0), read_cnt_(0), leftover_data_(0), write_buffer_(NULL), written_(0), write_buffer_size_(0),
-      request_message_(response_status_code_), response_message_(response_status_code_, config_), cur_server_(NULL),
+      request_message_(response_status_code_), response_message_(response_status_code_, config_, kqueue_), cur_server_(NULL),
       cur_location_(NULL), time_(time(NULL)) {}
 
 int Connection::getConnectionSocket() const {
@@ -37,6 +37,20 @@ void Connection::parsingRequestMessage() {
   */
 }
 
+ReturnState Connection::handlingStaticPage() {
+  ReturnState ret = response_message_.checkFileReadDone(read_, read_cnt_, read_buffer_, leftover_data_);
+  if (ret == AGAIN) {
+    return AGAIN;
+  }
+  if (ret == CONNECTION_CLOSE) {
+    return CONNECTION_CLOSE;
+  }
+  // createstaline
+  // createheader
+  // creatreponsemessage
+  
+}
+
 void Connection::writingToPipe() {
   if (request_message_.writeDone()) {
     state_ = HANDLING_DYNAMIC_PAGE_HEADER;
@@ -53,7 +67,12 @@ ReturnState Connection::work(void) {
   switch (state_) {
     case PARSING_REQUEST_MESSAGE:parsingRequestMessage();
       break;
-    case HANDLING_STATIC_PAGE:break;
+    case HANDLING_STATIC_PAGE:
+      checkFileReadDone();
+      if (handlingStaticPage() == CONNECTION_CLOSE) {
+        return CONNECTION_CLOSE;
+      }
+      break;
     case HANDLING_DYNAMIC_PAGE_HEADER:break;
     case HANDLING_DYNAMIC_PAGE_BODY:break;
     case WRITING_TO_PIPE:writingToPipe();
@@ -67,7 +86,7 @@ ReturnState Connection::work(void) {
 
 ReturnState Connection::writeHandler(const struct kevent &event) {
   // socket에 응답 메세지를 쓰는 도중 client가 강제로 커넥션을 끊었을 때
-  // pipe에 쓰는 도중에 cgi 프로세스가 종료되었을 때
+  // post의 경우 request 본문을 pipe에 쓰는 도중에 cgi 프로세스가 종료되었을 때
   if (event.flags == EV_EOF) {
     return FAIL;
   }
