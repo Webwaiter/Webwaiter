@@ -11,10 +11,10 @@ class ResponseMessage {
  public:
   explicit ResponseMessage(int &response_status_code, const Config& config, Kqueue& kqueue);
   ResponseMessage &operator=(const ResponseMessage &rhs);
-  std::string generateMessage() const;
-  ReturnState checkFileReadDone(size_t read_cnt, size_t read_buff_size, intptr_t leftover_data);
+  ReturnState checkFileReadDone(ssize_t read, size_t read_cnt, const char *read_buffer, intptr_t leftover_data);
 
  private:
+  void appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read, std::vector<char> &leftover_buffer);
   ssize_t written_;
   std::string status_protocol_;
   int &response_status_code_;
