@@ -1,43 +1,73 @@
+#include <arpa/inet.h>
 #include <unistd.h>
 
+#include <cstring>
 #include <iostream>
 #include <string>
 
 using std::cout;
 using std::endl;
 
-char **Connection::setCgiArguments() {
+static char **setCgiArguments(std::string &cgi_path, std::string &script_filename) {
+  char** argv = new char*[3];
+  argv[0] = new char[cgi_path.size() + 1];
+  std::strcpy(argv[0], cgi_path.c_str());
+  argv[1] = new char[script_filename.size() + 1];
+  std::strcpy(argv[1], script_filename.c_str());
+  argv[2] = 0;
+  return argv;
 }
 
-char **Connection::setMetaVariables() {
-  std::map<std::string, std::string> env;
+static std::string getQueryString(std::string &uri) {
+  size_t query_pos = uri.find('?');
+  if (query_pos == std::string::npos) {
+    return "";
+  }
+  size_t fragment_pos = uri.find('#');
+  return fragment_pos == std::string::npos ? uri.substr(query_pos + 1)
+    : uri.substr(query_pos + 1, fragment_pos - query_pos - 1);
+}
+
+static std::string getScriptName(std::string &uri, std::string &extention) {
+  size_t dot_pos = uri.find("." + extention);
+  return uri.substr(0, dot_pos + extention.size() + 1);
+}
+
+char **Connection::setMetaVariables(std::map<std::string, std::string> &env) {
   env["AUTH_TYPE"] = "";
   env["REQUEST_URI"] = request_message_.getUri();
-  env["QUERY_STRING"] = env["REQUEST_URI"];
+  env["QUERY_STRING"] = getQueryString(env["REQUEST_URI"]);
   env["CONTENT_LENGTH"] = request_message_.getContentLength();
   env["CONTENT_TYPE"] = request_message_.getContentType();
-  env["GATEWAY_INTERFACE"] = server_config_.getCgiVersion();
-  env["DOCUMENT_ROOT"] = location_->getRootDir();
+  env["GATEWAY_INTERFACE"] = config_.getCgiVersion();
+  env["DOCUMENT_ROOT"] = cur_location_->getRootDir();
   env["REQUEST_METHOD"] = request_message_.getMethod();
-  env["SERVER_NAME"] = server_->getServerName();
-  env["SERVER_PORT"] = server_->getServerPort();
-  env["SERVER_PROTOCOL"] = server_config_.getHttpVersion();
-  env["SERVER_SOFTWARE"] = server_config_.getServerProgramName();
-  env["REMOTE_ADDR"] = client_.getAddress();
+  env["SERVER_NAME"] = cur_server_->getServerName();
+  env["SERVER_PORT"] = cur_server_->getServerPort();
+  env["SERVER_PROTOCOL"] = config_.getHttpVersion();
+  env["SERVER_SOFTWARE"] = config_.getServerProgramName();
+  char ip[INET_ADDRSTRLEN];
+  inet_pton(AF_INET, &client_addr_, ip, INET_ADDRSTRLEN);
+  env["REMOTE_ADDR"] = ip;
   env["REMOTE_IDENT"] = "";
   env["REMOTE_USER"] = "";
   env["REMOTE_HOST"] = env["REMOTE_ADDR"];
-  env["SCRIPT_NAME"] = env["REQUEST_URI"];
+  env["SCRIPT_NAME"] = getScriptName(env["REQUEST_URI"], cur_location_->getCgiExtention());
   env["SCRIPT_FILENAME"] = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
   env["PATH_INFO"] = env["SCRIPT_FILENAME"];
   env["PATH_TRANSLATED"] = env["PATH_INFO"];
   int n = env.size();
-  char **ret = new char*[n + 1]();
+  char **meta_variables = new char*[n + 1];
+  int i = 0;
   for (std::map<std::string, std::string>::iterator it = env.begin();
        it != env.end(); ++it) {
     string s = it->first + '=' + it->second;
-
+    meta_variables[i] = new char[s.size() + 1];
+    std::strcpy(meta_variables[i], s.c_str());
+    ++i;
   }
+  meta_variables[i] = 0;
+  return meta_variables;
 }
 
 ReturnState Connection::executeCGIProcess() {
@@ -71,8 +101,9 @@ ReturnState Connection::executeCGIProcess() {
     }
 
     // exec
-    char **cgi_argv = setCgiArguments();
-    char **meta_variables = setMetaVariables();
+    std::map<std::string, std::string> env;
+    char **meta_variables = setMetaVariables(env);
+    char **cgi_argv = setCgiArguments(cur_location_->getCgiPath(), env["SCRIPT_FILENAME"]);
     if (execve(cgi_argv[0], cgi_argv, meta_variables) < 0) {
       return FAIL;
     }
