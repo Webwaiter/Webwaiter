@@ -33,21 +33,24 @@ class RequestMessage {
     kChunkSize,
     kChunkData,
     kTrailerField,
-    kParseDone
+    kParseComplete
   };
 
-  ReturnState parseStartLine();
-  ReturnState parseMethod();
-  ReturnState parseUri();
-  ReturnState parseProtocol();
-  ReturnState skipCrlf();
-  ReturnState parseHeaderLine();
-  ReturnState checkBodyType();
-  ReturnState parseContentLengthBody();
-  ReturnState parseChunkBody();
-  ReturnState parseChunkSize();
-  ReturnState parseChunkData();
-  ReturnState parseTrailerField();
+  void parseComplete(int response_status_code);
+
+  void parseStartLine();
+  void parseMethod();
+  void parseUri();
+  void parseProtocol();
+  void skipCrlf();
+  void parseHeaderLine();
+  void parseField(std::string &field);
+  void checkBodyType();
+  void parseContentLengthBody();
+  void parseChunkBody();
+  void parseChunkSize();
+  void parseChunkData();
+  void parseTrailerField();
 
   ParseState state_;
   ssize_t written_;
