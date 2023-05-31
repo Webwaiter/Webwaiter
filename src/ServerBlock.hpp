@@ -21,7 +21,7 @@ class ServerBlock {
   const std::map<std::string, std::string> &getDefaultErrorPages(void) const;
   const int &getClientBodySize() const;
   const std::string &getServerIP() const;
-  const int &getServerPort() const;
+  const std::string &getServerPort() const;
   const std::string &getServerName() const;
   const std::vector<LocationBlock> &getLocationBlocks() const;
 
@@ -31,7 +31,7 @@ class ServerBlock {
   std::map<std::string, std::string> default_error_pages_;
   int client_body_size_;
   std::string server_ip_;
-  int server_port_;
+  std::string server_port_;
   std::string server_name_;
   std::vector<LocationBlock> location_blocks_;
 };
