@@ -6,21 +6,21 @@
 
 #include "src/Config.hpp"
 #include "src/Kqueue.hpp"
+#include "src/RequestMessage.hpp"
 
 class ResponseMessage {
  public:
   explicit ResponseMessage(int &response_status_code, const Config& config, Kqueue& kqueue);
   ResponseMessage &operator=(const ResponseMessage &rhs);
-  ReturnState checkFileReadDone(ssize_t read, size_t read_cnt, const char *read_buffer, intptr_t leftover_data);
+  void appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read);
+  void createResponseMessage(const RequestMessage& request_message);
 
  private:
-  void appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read, std::vector<char> &leftover_buffer);
-  ssize_t written_;
-  std::string status_protocol_;
+  void createStartLine();
+  void createHeaderLine(const RequestMessage& request_message);
   int &response_status_code_;
   const Config& config_;
   Kqueue& kqueue_;
-  std::string status_message_;
   std::map<std::string, std::string> headers_;
   std::vector<char> startline_header_;
   std::vector<char> body_;

@@ -10,22 +10,24 @@
 ResponseMessage::ResponseMessage(int &response_status_code, const Config& config, Kqueue& kqueue)
     : response_status_code_(response_status_code), config_(config), kqueue_(kqueue) {}
 
-ReturnState ResponseMessage::checkFileReadDone(ssize_t read, size_t read_cnt, const char *read_buffer, intptr_t leftover_data) {
-  appendReadBufferToLeftoverBuffer(read_buffer, read, body_);
-  if (leftover_data <= sizeof(read_buffer)) {
-    if (read == leftover_data) {
-      // 다 읽은 상태
-      // close(file_fd);
-      // return SUCCESS;
+
+void ResponseMessage::appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read) {
+  for (ssize_t i = 0; i < read; ++i) {
+    body_.push_back(read_buffer[i]);
   }
-  // 다 못읽은 상태
-  // read event enable
-  // return AGAIN
+}
+
+void ResponseMessage::createStartLine() {
 
 }
 
-void ResponseMessage::appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read, std::vector<char> &leftover_buffer) {
-  for (ssize_t i = 0; i < read; ++i) {
-    leftover_buffer.push_back(read_buffer[i]);
-  }
+void ResponseMessage::createHeaderLine(const RequestMessage& request_message) {
+
+}
+
+void ResponseMessage::createResponseMessage(const RequestMessage& request_message) {
+  createStartLine();
+  createHeaderLine(request_message);
+  response_message_.insert(response_message_.end(), startline_header_.begin(), startline_header_.end());
+  response_message_.insert(response_message_.end(), body_.begin(), body_.end());
 }

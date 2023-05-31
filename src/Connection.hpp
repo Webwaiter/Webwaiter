@@ -31,7 +31,6 @@ class Connection {
   void setConfigInfo();
   void parsingRequestMessage();
   ReturnState handlingStaticPage();
-  ReturnState checkFileReadDone();
   void executeCGIProcess();
   void openStaticPage();
   void writingToPipe();
@@ -50,6 +49,8 @@ class Connection {
     WRITING_DYNAMIC_PAGE_HEADER,
     WRITING_DYNAMIC_PAGE_BODY
   };
+
+  ReturnState checkFileReadDone();
 
   int connection_socket_;
   int file_fd_;

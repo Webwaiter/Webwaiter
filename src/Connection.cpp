@@ -51,14 +51,15 @@ ReturnState Connection::checkFileReadDone() {
 
 ReturnState Connection::handlingStaticPage() {
   response_message_.appendReadBufferToLeftoverBuffer(read_buffer_, read_);
-  ReturnState ret = this->checkFileReadDone();
+  ReturnState ret = checkFileReadDone();
   if (ret == AGAIN) {
     return AGAIN;
   }
-  // createstaline
-  // createheader
-  // creatreponsemessage
-  
+  response_message_.createResponseMessage(request_message_);
+  // write event enable
+  kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
+  state_ = WRITING_STATIC_PAGE;
+  //TODO: update write buffer & write buffer size
 }
 
 void Connection::writingToPipe() {
