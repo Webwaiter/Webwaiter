@@ -7,7 +7,8 @@
 
 #include "src/RequestMessage.hpp"
 
-ResponseMessage::ResponseMessage(int &response_status_code) : response_status_code_(response_status_code) {}
+ResponseMessage::ResponseMessage(int &response_status_code, const Config& config, Kqueue& kqueue)
+    : response_status_code_(response_status_code), config_(config), kqueue_(kqueue) {}
 
 std::string ResponseMessage::generateMessage() const {
   std::stringstream ss;
