@@ -176,34 +176,34 @@ void Config::parseMimeFile(const char *file_path) {
   }
 }
 
-std::string Config::getServerProgramName() const {
+const std::string &Config::getServerProgramName() const {
   return server_program_name_;
 }
 
-std::string Config::getHttpVersion() const {
+const std::string &Config::getHttpVersion() const {
   return http_version_;
 }
 
-std::string Config::getCgiVersion() const {
+const std::string &Config::getCgiVersion() const {
   return cgi_version_;
 }
 
-std::vector<ServerBlock> Config::getServerBlocks() const {
+const std::vector<ServerBlock> &Config::getServerBlocks() const {
   return server_blocks_;
 }
 
-int Config::getTimeout() const {
+const int &Config::getTimeout() const {
   return timeout_;
 }
 
-std::string Config::getCgiPath() const {
+const std::string &Config::getCgiPath() const {
   return cgi_path_;
 }
 
-std::map<std::string, std::string> Config::getStausMessages() const {
+const std::map<std::string, std::string> &Config::getStausMessages() const {
   return status_messages_;
 }
 
-std::map<std::string, std::string> Config::getMimeTypes() const {
+const std::map<std::string, std::string> &Config::getMimeTypes() const {
   return mime_types_;
 }

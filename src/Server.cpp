@@ -7,7 +7,7 @@
 #include <sys/event.h>
 
 #include <cstdio>
-#include <queue>
+#include <deque>
 #include <set>
 
 #include "src/Config.hpp"
@@ -16,7 +16,7 @@
 #include "src/utils.hpp"
 
 Server::Server(const Config &config, const std::vector<int> &listen_sockets)
-    : config_(config), listen_sockets_(listen_sockets) {
+    : config_(config), listen_sockets_(listen_sockets), kqueue_() {
   for (size_t i = 0; i < listen_sockets.size(); ++i) {
     kqueue_.setEvent(listen_sockets[i], EVFILT_READ, EV_ADD, 0, 0, NULL);
   }
@@ -28,7 +28,7 @@ Connection *Server::acceptClient(int listen_socket) {
     throw 1;
   }
   fcntl(connection_socket, F_SETFL, O_NONBLOCK);
-  Connection *p = new Connection(connection_socket, kqueue_);
+  Connection *p = new Connection(connection_socket, kqueue_, config_);
   kqueue_.setEvent(connection_socket, EVFILT_READ, EV_ADD, 0, 0, p);
   kqueue_.setEvent(connection_socket, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, p);
   return p;
@@ -43,9 +43,21 @@ bool Server::isListenSocketEvent(int catch_fd) {
   return false;
 }
 
+static void eraseConnection(Connection *ptr, std::set<Connection*> &connections, std::deque<Connection*> &work_queue) {
+  ptr->closeConnection();
+  delete ptr;
+  connections.erase(ptr);
+  for (std::deque<Connection*>::iterator it; it != work_queue.end(); ++it) {
+    if (*it == ptr) {
+      work_queue.erase(it);
+      break;
+    }
+  }
+}
+
 void Server::run() {
   std::set<Connection*> connections;
-  std::queue<Connection*> work_queue;
+  std::deque<Connection*> work_queue;
   struct kevent event_list[10];
   while (1) {
     int detected_cnt = kevent(kqueue_.fd_, NULL, 0, event_list, 10, NULL);
@@ -57,34 +69,45 @@ void Server::run() {
         try {
           Connection *new_connection = acceptClient(id);
           connections.insert(new_connection);
-          work_queue.push(new_connection);
+          work_queue.push_back(new_connection);
         } catch (int &e) {
           std::perror("accept() error");
         }
       } else if (filter == EVFILT_READ) {
-        ptr->readHandler(id);
+        if (ptr->readHandler(event_list[i]) == FAIL) {
+          eraseConnection(ptr, connections, work_queue);
+        }
         kqueue_.setEvent(id, EVFILT_READ, EV_DISABLE, 0, 0, NULL);
       } else if (filter == EVFILT_WRITE) {
-        ptr->writeHandler(id);
+        if (ptr->writeHandler(event_list[i]) == FAIL) {
+          eraseConnection(ptr, connections, work_queue);
+        }
         kqueue_.setEvent(id, EVFILT_WRITE, EV_DISABLE, 0, 0, NULL);
       } else if (filter == EVFILT_PROC) {
+        int ret = waitpid(id, NULL, 0);
         int status = event_list[i].data;
         if ((WIFEXITED(status) && WEXITSTATUS(status) != 0)
-            || WIFSIGNALED(status)) {
-          ptr->closeConnection();
-          delete ptr;
-          connections.erase(ptr);
+            || WIFSIGNALED(status) || ret != id) {
+          eraseConnection(ptr, connections, work_queue);
         }
       }
     }
     for (size_t queue_size = work_queue.size(); queue_size > 0; --queue_size) {
       Connection *connection = work_queue.front();
-      work_queue.pop();
+      work_queue.pop_front();
       if (connection->work() == CONNECTION_CLOSE) {
-        //pop fd - connection pair from map
+        eraseConnection(connection, connections, work_queue);
       } else {
-        work_queue.push(connection);
+        work_queue.push_back(connection);
       }
     }
   }
+}
+
+const Config &Server::getConfig() const {
+  return config_;
+}
+
+const Kqueue &Server::getKqueue() const {
+  return kqueue_;
 }

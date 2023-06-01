@@ -67,8 +67,14 @@ static void checkServerIP(std::string server_ip) {
   }
 }
 
-static void checkServerPort(int server_port) {
-  if (!(server_port >= 0 && server_port <= 65535)) {
+static void checkServerPort(std::string server_port) {
+  for (size_t i = 0; i < server_port.size(); ++i) {
+    if (!isdigit(server_port[i])) {
+      throw FAIL;
+    }
+  }
+  int port = atoi(server_port.c_str());
+  if (!(port >= 0 && port <= 65535)) {
     throw FAIL;
   }
 }
@@ -118,7 +124,7 @@ void ServerBlock::parseServerBlock(std::fstream &file) {
       server_ip_ = tmp_vec[1];
       error_flag |= (1 << 6);
     } else if (tmp_vec[0] == "port" && tmp_vec.size() == 2) {
-      server_port_ = atoi(tmp_vec[1].c_str());
+      server_port_ = tmp_vec[1];
       error_flag |= (1 << 7);
     } else if (tmp_vec[0] == "server_name" && tmp_vec.size() == 2) {
       server_name_ = tmp_vec[1];
@@ -130,26 +136,26 @@ void ServerBlock::parseServerBlock(std::fstream &file) {
   }
 }
 
-std::map<std::string, std::string> ServerBlock::getDefaultErrorPages(void) const {
+const std::map<std::string, std::string> &ServerBlock::getDefaultErrorPages(void) const {
   return default_error_pages_;
 }
 
-int ServerBlock::getClientBodySize() const {
+const int &ServerBlock::getClientBodySize() const {
   return client_body_size_;
 }
 
-std::string ServerBlock::getServerIP() const {
+const std::string &ServerBlock::getServerIP() const {
   return server_ip_;
 }
 
-int ServerBlock::getServerPort() const {
+const std::string &ServerBlock::getServerPort() const {
   return server_port_;
 }
 
-std::string ServerBlock::getServerName() const {
+const std::string &ServerBlock::getServerName() const {
   return server_name_;
 }
 
-std::vector<LocationBlock> ServerBlock::getLocationBlocks() const {
+const std::vector<LocationBlock> &ServerBlock::getLocationBlocks() const {
   return location_blocks_;
 }

@@ -18,12 +18,12 @@
 class ServerBlock {
  public:
   explicit ServerBlock(std::fstream &file);
-  std::map<std::string, std::string> getDefaultErrorPages(void) const;
-  int getClientBodySize() const;
-  std::string getServerIP() const;
-  int getServerPort() const;
-  std::string getServerName() const;
-  std::vector<LocationBlock> getLocationBlocks() const;
+  const std::map<std::string, std::string> &getDefaultErrorPages(void) const;
+  const int &getClientBodySize() const;
+  const std::string &getServerIP() const;
+  const std::string &getServerPort() const;
+  const std::string &getServerName() const;
+  const std::vector<LocationBlock> &getLocationBlocks() const;
 
  private:
   void parseServerBlock(std::fstream &file);
@@ -31,7 +31,7 @@ class ServerBlock {
   std::map<std::string, std::string> default_error_pages_;
   int client_body_size_;
   std::string server_ip_;
-  int server_port_;
+  std::string server_port_;
   std::string server_name_;
   std::vector<LocationBlock> location_blocks_;
 };

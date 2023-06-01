@@ -1,7 +1,5 @@
 // Copyright 2023 ean, hanbkim, jiyunpar
-
-#include <vector>
-#include <string>
+#include "src/utils.hpp"
 
 std::vector<std::string> split(std::string input, std::string delimiter_set) {
     std::vector<std::string> result;
@@ -35,13 +33,19 @@ std::string skipCharset(std::string input, std::string charset) {
 
 void trim(std::string& str)
 {
-  // 왼쪽 공백 제거
-  std::string::size_type left_pos = str.find_first_not_of(" ");
+  size_t left_pos = str.find_first_not_of(" ");
   if (left_pos != std::string::npos)
     str.erase(0, left_pos);
 
-  // 오른쪽 공백 제거
-  std::string::size_type right_pos = str.find_last_not_of(" ");
+  size_t right_pos = str.find_last_not_of(" ");
   if (right_pos != std::string::npos)
     str.erase(right_pos + 1);
+}
+
+void updateTime(time_t &cur_time) {
+  cur_time = time(NULL);
+}
+
+double getTimeOut(time_t &base_time) {
+  return (difftime(time(NULL), base_time));
 }

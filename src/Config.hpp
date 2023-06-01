@@ -18,14 +18,14 @@
 class Config {
  public:
   explicit Config(const char *file_path);
-  std::string getServerProgramName() const;
-  std::string getHttpVersion() const;
-  std::string getCgiVersion() const;
-  std::string getCgiPath() const;
-  int getTimeout() const;
-  std::map<std::string, std::string> getStausMessages() const;
-  std::map<std::string, std::string> getMimeTypes() const;
-  std::vector<ServerBlock> getServerBlocks() const;
+  const std::string &getServerProgramName() const;
+  const std::string &getHttpVersion() const;
+  const std::string &getCgiVersion() const;
+  const std::string &getCgiPath() const;
+  const int &getTimeout() const;
+  const std::map<std::string, std::string> &getStausMessages() const;
+  const std::map<std::string, std::string> &getMimeTypes() const;
+  const std::vector<ServerBlock> &getServerBlocks() const;
 
  private:
   void parseConfigFile(const char *file_path);
