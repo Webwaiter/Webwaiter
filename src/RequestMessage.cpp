@@ -38,7 +38,7 @@ void RequestMessage::parseComplete(int response_status_code) {
 }
 
 ReturnState RequestMessage::parse(const char *buffer, size_t read) {
-  if (read <= 0 && leftover_.empty()) {
+  if (read == 0 && leftover_.empty()) {
     return AGAIN;
   }
 
