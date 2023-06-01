@@ -5,7 +5,7 @@
 
 #include <map>
 #include <string>
-#include <vector>
+#include <deque>
 
 #include "src/utils.hpp"
 
@@ -30,26 +30,35 @@ class RequestMessage {
     kSkipCrlf,
     kHeaderLine,
     kContentLength,
-    kChunked,
-    kParseDone
+    kChunkSize,
+    kChunkData,
+    kTrailerField,
+    kParseComplete
   };
 
-  ReturnState parseStartLine();
-  ReturnState parseMethod();
-  ReturnState parseUri();
-  ReturnState parseProtocol();
-  ReturnState skipCrlf();
-  ReturnState parseHeaderLine();
-  ReturnState checkBodyType();
-  ReturnState parseContentLengthBody();
-  ReturnState parseChunkedBody();
+  void parseStartLine();
+  void parseMethod();
+  void parseUri();
+  void parseProtocol();
+  void skipCrlf();
+  void parseHeaderLine();
+  void parseContentLengthBody();
+  void parseChunkBody();
+  void parseChunkSize();
+  void parseChunkData();
+  void parseTrailerField();
+
+  void parseComplete(int response_status_code);
+  void checkBodyType();
+  void parseField(std::string &field);
+  void removeChunkedInHeader();
 
   ParseState state_;
   ssize_t written_;
 
-  std::vector<char> leftover_;
+  std::deque<char> leftover_;
   ssize_t content_length_;
-  ssize_t chunked_length_;
+  ssize_t chunk_size_;
 
   std::string method_;
   std::string uri_;

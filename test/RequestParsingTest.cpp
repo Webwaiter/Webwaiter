@@ -11,11 +11,13 @@ int main() {
   int fd = open("test", O_RDONLY);
   if (fd <= 0)
     return 0;
-  char buf[1];
+  char buf[8000];
 
+  int a = 0;
   while (1) {
+    a++;
     int rd = read(fd, buf, sizeof(buf));
-    request_message.parse(buf, rd);
+    auto ret =  request_message.parse(buf, rd);
     std::cout << "METHOD : " << request_message.getMethod() << '\n';
     std::cout << "URI : " << request_message.getUri() << '\n';
     std::cout << "PROTOCOl : " << request_message.getAProtocol() << '\n';
@@ -29,8 +31,7 @@ int main() {
       std::cout << i;
     }
     std::cout << '\n';
-    if (rd == 0)
+    if (ret == SUCCESS)
       break ;
   }
-
 }
