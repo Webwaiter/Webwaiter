@@ -30,7 +30,7 @@ class Connection {
   bool checkTimeOut();
   void setConfigInfo();
   void parsingRequestMessage();
-  void executeCGIProcess();
+  void executeCgiProcess();
   void openStaticPage();
   void writingToPipe();
   ReturnState writeHandler(const struct kevent &event);
