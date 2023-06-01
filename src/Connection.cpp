@@ -56,10 +56,12 @@ ReturnState Connection::handlingStaticPage() {
     return AGAIN;
   }
   response_message_.createResponseMessage(request_message_);
-  // write event enable
+  //TODO: update write buffer & write buffer size
+  write_buffer_ = response_message_.getResponseMessage().data();
+  write_buffer_size_ = response_message_.getResponseMessage().size();
+  // write event enable & update state
   kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
   state_ = WRITING_STATIC_PAGE;
-  //TODO: update write buffer & write buffer size
 }
 
 void Connection::writingToPipe() {
