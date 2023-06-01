@@ -187,8 +187,7 @@ void RequestMessage::checkBodyType() {
   if (content_length != headers_.end()) {
     content_length_ = std::strtol(content_length->second.c_str(), NULL, 10);
     state_ = kContentLength;
-  }
-  if (chunked != headers_.end()) {
+  } else {
     content_length_ = 0;
     state_ = kChunkSize;
   }
