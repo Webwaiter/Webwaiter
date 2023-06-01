@@ -5,7 +5,7 @@
 
 #include <map>
 #include <string>
-#include <vector>
+#include <deque>
 
 #include "src/utils.hpp"
 
@@ -56,7 +56,7 @@ class RequestMessage {
   ParseState state_;
   ssize_t written_;
 
-  std::vector<char> leftover_;
+  std::deque<char> leftover_;
   ssize_t content_length_;
   ssize_t chunk_size_;
 

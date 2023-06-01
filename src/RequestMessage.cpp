@@ -6,7 +6,7 @@
 
 #include "src/utils.hpp"
 
-typedef std::vector<char>::iterator vector_iterator;
+typedef std::deque<char>::iterator deque_iterator;
 typedef std::map<std::string, std::string>::iterator map_iterator;
 static const char kCrlf[] = {'\r', '\n'};
 static const size_t kCrlfLength = 2;
@@ -75,7 +75,7 @@ void RequestMessage::parseStartLine() {
 }
 
 void RequestMessage::parseMethod() {
-  vector_iterator space_pos = std::find(leftover_.begin(), leftover_.end(), ' ');
+  deque_iterator space_pos = std::find(leftover_.begin(), leftover_.end(), ' ');
   if (space_pos == leftover_.end()) {
     return;
   }
@@ -86,7 +86,7 @@ void RequestMessage::parseMethod() {
 }
 
 void RequestMessage::parseUri() {
-  vector_iterator space_pos = std::find(leftover_.begin(), leftover_.end(), ' ');
+  deque_iterator space_pos = std::find(leftover_.begin(), leftover_.end(), ' ');
   if (space_pos == leftover_.end()) {
     return;
   }
@@ -98,7 +98,7 @@ void RequestMessage::parseUri() {
 }
 
 void RequestMessage::parseProtocol() {
-  vector_iterator crlf_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
+  deque_iterator crlf_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
   if (crlf_pos == leftover_.end()) {
     return;
   }
@@ -114,7 +114,7 @@ void RequestMessage::parseProtocol() {
 }
 
 void RequestMessage::skipCrlf() {
-  vector_iterator line_pos;
+  deque_iterator line_pos;
   while (true) {
     line_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
     if (line_pos == leftover_.end()) {
@@ -136,7 +136,7 @@ void RequestMessage::skipCrlf() {
 }
 
 void RequestMessage::parseHeaderLine() {
-  vector_iterator line_pos;
+  deque_iterator line_pos;
   while (true) {
     line_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
     if (line_pos == leftover_.end()) {
@@ -216,7 +216,7 @@ void RequestMessage::parseChunkBody() {
 }
 
 void RequestMessage::parseChunkSize() {
-  vector_iterator crlf_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
+  deque_iterator crlf_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
   if (crlf_pos == leftover_.end()) {
     return;
   }
@@ -242,7 +242,7 @@ void RequestMessage::parseChunkSize() {
 }
 
 void RequestMessage::parseChunkData() {
-  vector_iterator crlf_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
+  deque_iterator crlf_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
   if (crlf_pos == leftover_.end()) {
     return;
   }
@@ -259,7 +259,7 @@ void RequestMessage::parseChunkData() {
 }
 
 void RequestMessage::parseTrailerField() {
-  vector_iterator line_pos;
+  deque_iterator line_pos;
   while (true) {
     line_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
     if (line_pos == leftover_.end()) {
