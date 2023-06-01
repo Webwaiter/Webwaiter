@@ -130,7 +130,7 @@ const std::string &LocationBlock::getIndex() const {
   return index_;
 }
 
-const std::string &LocationBlock::getCgiExention() const {
+const std::string &LocationBlock::getCgiExtension() const {
   return cgi_extension_;
 }
 

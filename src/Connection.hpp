@@ -31,7 +31,7 @@ class Connection {
   void setConfigInfo();
   void parsingRequestMessage();
   ReturnState handlingStaticPage();
-  void executeCGIProcess();
+  void executeCgiProcess();
   void openStaticPage();
   void writingToPipe();
   ReturnState writeHandler(const struct kevent &event);
