@@ -105,9 +105,8 @@ void RequestMessage::parseProtocol() {
 
   protocol_.insert(protocol_.begin(), leftover_.begin(), crlf_pos);
   leftover_.erase(leftover_.begin(), crlf_pos + kCrlfLength);
-  std::for_each(protocol_.begin(), protocol_.end(), toLower);
 
-  if (protocol_ != "http/1.1") {
+  if (protocol_ != "HTTP/1.1") {
     parseComplete(400);
     return;
   }
