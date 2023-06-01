@@ -18,7 +18,13 @@ void ResponseMessage::appendReadBufferToLeftoverBuffer(const char *read_buffer, 
 }
 
 void ResponseMessage::createStartLine() {
-
+  /* 
+  * HTTP_VERSION sp STATUS_CODE sp [reason-phrase]
+  */
+  //http
+  startline_header_.insert(startline_header_.end(), config_.getHttpVersion().begin(), config_.getHttpVersion().end());
+  startline_header_.push_back(' ');
+  
 }
 
 void ResponseMessage::createHeaderLine(const RequestMessage& request_message) {
