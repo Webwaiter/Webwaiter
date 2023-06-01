@@ -8,6 +8,9 @@
 #include <vector>
 #include <ctime>
 
+static const char kCrlf[] = {'\r', '\n'};
+static const size_t kCrlfLength = 2;
+
 enum ReturnState {
   SUCCESS,
   FAIL,
@@ -27,6 +30,16 @@ std::string numberToString(T number) {
   std::stringstream ss;
   ss << number;
   return ss.str();
+}
+
+template<typename T>
+void appendCrlf(T &dest) {
+    dest.insert(dest.end(), kCrlf, kCrlf + kCrlfLength);
+}
+
+template<typename T , typename U>
+void appendData(T &dest, U &src) {
+  dest.insert(dest.end(), src.begin(), src.end());
 }
 
 #endif //SRC_UTILS_HPP_

@@ -30,7 +30,7 @@ void Connection::parsingRequestMessage() {
 
   if (isCGIExtension()) {
     executeCGIProcess();
-  } else {
+  } else if (isDirectorylisting){
     openStaticPage();
   }
 
@@ -50,13 +50,10 @@ ReturnState Connection::checkFileReadDone() {
 }
 
 ReturnState Connection::handlingStaticPage() {
-  response_message_.appendReadBufferToLeftoverBuffer(read_buffer_, read_);
-  ReturnState ret = checkFileReadDone();
-  if (ret == AGAIN) {
-    return AGAIN;
-  }
-  response_message_.createResponseMessage(request_message_);
-  //TODO: update write buffer & write buffer size
+  std::string path = cur_location_->getRootDir() + request_message_.getUri();
+  response_message_.createBody(path);
+  response_message_.createResponseMessage(request_message_, *cur_location_);
+  // update write buffer & write buffer size
   write_buffer_ = response_message_.getResponseMessage().data();
   write_buffer_size_ = response_message_.getResponseMessage().size();
   // write event enable & update state
