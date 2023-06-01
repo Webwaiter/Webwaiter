@@ -283,9 +283,7 @@ void RequestMessage::removeChunkedInHeader() {
   size_t pos = value.find("chunked");
   value.erase(pos, 7);
 
-  std::stringstream ss;
-  ss << content_length_;
-  headers_["content-length"] = ss.str();
+  headers_["content-length"] = numberToString(content_length_);
 }
 
 const std::string &RequestMessage::getMethod(void) const {
