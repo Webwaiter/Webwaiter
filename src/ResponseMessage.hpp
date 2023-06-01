@@ -14,6 +14,9 @@ class ResponseMessage {
   ResponseMessage &operator=(const ResponseMessage &rhs);
   void appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read);
   void createResponseMessage(const RequestMessage& request_message);
+  const std::vector<char> &getStartlineHeader() const;
+  const std::vector<char> &getBody() const;
+  const std::vector<char> &getResponseMessage() const;
 
  private:
   void createStartLine();

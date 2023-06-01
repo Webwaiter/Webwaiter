@@ -31,3 +31,13 @@ void ResponseMessage::createResponseMessage(const RequestMessage& request_messag
   response_message_.insert(response_message_.end(), startline_header_.begin(), startline_header_.end());
   response_message_.insert(response_message_.end(), body_.begin(), body_.end());
 }
+
+const std::vector<char> &ResponseMessage::getStartlineHeader() const {
+  return startline_header_;
+}
+const std::vector<char> &ResponseMessage::getBody() const {
+  return body_;
+}
+const std::vector<char> &ResponseMessage::getResponseMessage() const {
+  return response_message_;
+}
