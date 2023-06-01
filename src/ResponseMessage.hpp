@@ -4,20 +4,35 @@
 #include <string>
 #include <vector>
 
+#include "src/Config.hpp"
+#include "src/Kqueue.hpp"
+#include "src/ServerBlock.hpp"
+#include "src/LocationBlock.hpp"
+#include "src/RequestMessage.hpp"
+
 class ResponseMessage {
  public:
-  explicit ResponseMessage(int &response_status_code, const Config& config);
+  explicit ResponseMessage(int &response_status_code, const Config& config, Kqueue& kqueue);
   ResponseMessage &operator=(const ResponseMessage &rhs);
-  std::string generateMessage() const;
+  void appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read);
+  void createResponseMessage(const RequestMessage& request_message, const LocationBlock &location);
+  const std::vector<char> &getStatusLine() const;
+  const std::vector<char> &getHeaderLine() const;
+  const std::vector<char> &getBody() const;
+  const std::vector<char> &getResponseMessage() const;
+  void createBody(const std::string &path);
 
  private:
-  ssize_t written_;
-  std::string status_protocol_;
+  void createStatusLine();
+  void createHeaderLine(const RequestMessage& request_message, const LocationBlock &location);
+  void setLastModified(const RequestMessage &request_message, const LocationBlock &location);
+  void setAllowed(const RequestMessage &request_mesage, const LocationBlock &location);
   int &response_status_code_;
   const Config& config_;
-  std::string status_message_;
+  Kqueue& kqueue_;
   std::map<std::string, std::string> headers_;
-  std::vector<char> startline_header_;
+  std::vector<char> status_line_;
+  std::vector<char> header_line_;
   std::vector<char> body_;
   std::vector<char> response_message_;
 };

@@ -11,10 +11,10 @@
 #include "src/utils.hpp"
 
 Connection::Connection(int connection_socket, Kqueue& kqueue, const Config& config)
-    : connection_socket_(connection_socket), response_status_code_(200), kqueue_(kqueue), config_(config),
-      read_(0), read_cnt_(0), leftover_data_(0), write_buffer_(NULL), written_(0), write_buffer_size_(0),
-      request_message_(response_status_code_), response_message_(response_status_code_, config_), cur_server_(NULL),
-      cur_location_(NULL), time_(time(NULL)) {}
+    : connection_socket_(connection_socket), file_fd_(-1), pipe_read_fd_(-1), pipe_write_fd_(-1),
+      response_status_code_(200), kqueue_(kqueue), config_(config), read_(0), read_cnt_(0), leftover_data_(0),
+      write_buffer_(NULL), written_(0), write_buffer_size_(0), request_message_(response_status_code_),
+      response_message_(response_status_code_, config_, kqueue_), cur_server_(NULL), cur_location_(NULL), time_(time(NULL)) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
@@ -30,11 +30,35 @@ void Connection::parsingRequestMessage() {
 
   if (isCGIExtension()) {
     executeCGIProcess();
-  } else {
+  } else if (isDirectorylisting){
     openStaticPage();
   }
 
   */
+}
+
+ReturnState Connection::checkFileReadDone() {
+  if (leftover_data_ <= sizeof(read_buffer_)) 
+    if (read_ == leftover_data_) {
+      // 다 읽은 상태
+      close(file_fd_);
+      return SUCCESS;
+  }
+  // 다 못읽은 상태
+  kqueue_.setEvent(file_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
+  return AGAIN;
+}
+
+ReturnState Connection::handlingStaticPage() {
+  std::string path = cur_location_->getRootDir() + request_message_.getUri();
+  response_message_.createBody(path);
+  response_message_.createResponseMessage(request_message_, *cur_location_);
+  // update write buffer & write buffer size
+  write_buffer_ = response_message_.getResponseMessage().data();
+  write_buffer_size_ = response_message_.getResponseMessage().size();
+  // write event enable & update state
+  kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
+  state_ = WRITING_STATIC_PAGE;
 }
 
 void Connection::writingToPipe() {
@@ -53,7 +77,8 @@ ReturnState Connection::work(void) {
   switch (state_) {
     case PARSING_REQUEST_MESSAGE:parsingRequestMessage();
       break;
-    case HANDLING_STATIC_PAGE:break;
+    case HANDLING_STATIC_PAGE:handlingStaticPage();
+      break;
     case HANDLING_DYNAMIC_PAGE_HEADER:break;
     case HANDLING_DYNAMIC_PAGE_BODY:break;
     case WRITING_TO_PIPE:writingToPipe();
@@ -67,7 +92,7 @@ ReturnState Connection::work(void) {
 
 ReturnState Connection::writeHandler(const struct kevent &event) {
   // socket에 응답 메세지를 쓰는 도중 client가 강제로 커넥션을 끊었을 때
-  // pipe에 쓰는 도중에 cgi 프로세스가 종료되었을 때
+  // post의 경우 request 본문을 pipe에 쓰는 도중에 cgi 프로세스가 종료되었을 때
   if (event.flags == EV_EOF) {
     return FAIL;
   }
@@ -103,7 +128,13 @@ char *Connection::getReadBuffer() {
 
 void Connection::closeConnection() {
   close(connection_socket_);
-  for (size_t i = 0; i < fd_vec_.size(); ++i) {
-    close(fd_vec_[i]);
+  if (file_fd_ != -1) {
+    close(file_fd_);
+  }
+  if (pipe_read_fd_ != -1) {
+    close(pipe_read_fd_);
+  }
+  if (pipe_write_fd_ != -1) {
+    close(pipe_write_fd_);
   }
 }
