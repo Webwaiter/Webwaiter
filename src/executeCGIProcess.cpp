@@ -10,12 +10,7 @@ using std::endl;
 
 static std::string getQueryString(std::string &uri) {
   size_t query_pos = uri.find('?');
-  if (query_pos == std::string::npos) {
-    return "";
-  }
-  size_t fragment_pos = uri.find('#');
-  return fragment_pos == std::string::npos ? uri.substr(query_pos + 1)
-    : uri.substr(query_pos + 1, fragment_pos - query_pos - 1);
+  return query_pos == std::string::npos ? "" : uri.substr(query_pos + 1);
 }
 
 static std::string getScriptName(std::string &uri, std::string &extention) {
