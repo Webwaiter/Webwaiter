@@ -66,7 +66,7 @@ class Connection {
   size_t read_cnt_;
   intptr_t leftover_data_;
   
-  char *write_buffer_;
+  const char *write_buffer_;
   ssize_t written_;
   size_t write_buffer_size_;
 
