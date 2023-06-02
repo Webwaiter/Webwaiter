@@ -2,10 +2,6 @@
 
 #include "src/RequestMessage.hpp"
 
-#include <sstream>
-
-#include "src/utils.hpp"
-
 typedef std::deque<char>::iterator deque_iterator;
 typedef std::map<std::string, std::string>::iterator map_iterator;
 
