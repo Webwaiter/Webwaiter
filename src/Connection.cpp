@@ -83,7 +83,11 @@ ReturnState Connection::work(void) {
     case HANDLING_DYNAMIC_PAGE_BODY:break;
     case WRITING_TO_PIPE:writingToPipe();
       break;
-    case WRITING_STATIC_PAGE:break;
+    case WRITING_STATIC_PAGE:
+      if (writingStaticPage() == CONNECTION_CLOSE) {
+        return CONNECTION_CLOSE;
+      }
+      break;
     case WRITING_DYNAMIC_PAGE_HEADER:break;
     case WRITING_DYNAMIC_PAGE_BODY:break;
   }
@@ -137,4 +141,20 @@ void Connection::closeConnection() {
   if (pipe_write_fd_ != -1) {
     close(pipe_write_fd_);
   }
+}
+
+ReturnState Connection::writingStaticPage() {
+  if (written_ < write_buffer_size_) {
+    kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
+    return AGAIN;
+  }
+  written_ = 0;
+  write_buffer_ = NULL;
+  write_buffer_size_ = 0;
+  const std::map<std::string, std::string> &response_headers = response_message_.getHeaders();
+  if (response_headers.at("Connection") == "close") {
+    return CONNECTION_CLOSE;
+  }
+  state_ = PARSING_REQUEST_MESSAGE;
+  return SUCCESS;
 }
