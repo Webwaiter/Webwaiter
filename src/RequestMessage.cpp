@@ -10,7 +10,7 @@ static void toLower(char &c) {
 }
 
 RequestMessage::RequestMessage(int &response_status_code_)
-    : state_(kMethod), content_length_(0), chunk_size_(0), response_status_code_(response_status_code_){}
+    : state_(kMethod), content_length_(0), chunk_size_(0), response_status_code_(response_status_code_) {}
 
 void RequestMessage::appendLeftover(const char *buffer, size_t n) {
   for (size_t i = 0; i < n; ++i) {
@@ -24,6 +24,16 @@ bool RequestMessage::writeDone() {
     return true;
   }
   return false;
+}
+
+void RequestMessage::clear() {
+  state_ = kMethod;
+  written_ = 0;
+  method_.clear();
+  uri_.clear();
+  protocol_.clear();
+  headers_.clear();
+  body_.clear();
 }
 
 void RequestMessage::parseComplete(int response_status_code) {
@@ -181,7 +191,7 @@ void RequestMessage::checkBodyType() {
   if (content_length != headers_.end()) {
     content_length_ = std::strtol(content_length->second.c_str(), NULL, 10);
     state_ = kContentLength;
-  } else if (chunked != headers_.end()){
+  } else if (chunked != headers_.end()) {
     state_ = kChunkSize;
   } else {
     state_ = kParseComplete;

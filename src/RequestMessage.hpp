@@ -15,6 +15,7 @@ class RequestMessage {
   void appendLeftover(const char *buffer, size_t n);
   ReturnState parse(const char *buffer, size_t read);
   bool writeDone();
+  void clear();
 
   const std::string &getMethod(void) const;
   const std::string &getUri() const;
