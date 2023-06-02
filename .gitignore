@@ -17,6 +17,7 @@
 *.exe
 *.out
 *.app
+webserv
 
 # OS or Editor specific files
 .DS_Store
