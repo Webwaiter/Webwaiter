@@ -23,20 +23,17 @@ int Connection::getConnectionSocket() const {
 }
 
 void Connection::parsingRequestMessage() {
-  /*
-  // 1. 파싱
-  ReturnState ret = request_message_.parse(read_buffer_);
+  ReturnState ret = request_message_.parse(read_buffer_, read_);
   if (ret == AGAIN) {
     return;
   }
-
-  if (isCGIExtension()) {
-    executeCGIProcess();
-  } else if (isDirectorylisting){
-    openStaticPage();
-  }
-
-  */
+  // TODO: 파싱유효성 검사
+  setConfigInfo();
+  // TODO: allowed method 검사
+  // TODO: GET, POST logic과 DELETE logic 분리
+  // TODO: extension 확인 후 CGI 혹은 static page 처리
+  // TODO: directory listing logic 구현
+  state_ = HANDLING_STATIC_PAGE;
 }
 
 // ReturnState Connection::checkFileReadDone() {
