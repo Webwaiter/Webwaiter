@@ -22,10 +22,9 @@ int Connection::getConnectionSocket() const {
   return connection_socket_;
 }
 
-void Connection::parsingRequestMessage() {
-  ReturnState ret = request_message_.parse(read_buffer_, read_);
-  if (ret == AGAIN) {
-    return;
+ReturnState Connection::parsingRequestMessage() {
+  if (request_message_.parse(read_buffer_, read_) == AGAIN) {
+    return AGAIN;
   }
   // TODO: 파싱유효성 검사
   setConfigInfo();
@@ -67,14 +66,16 @@ void Connection::writingToPipe() {
   }
 }
 
-ReturnState Connection::work(void) {
+ReturnState Connection::work() {
   //   if (checkTimeOut()){
   //     // connectionClose();
   //     return CONNECTION_CLOSE;
   //   }
   switch (state_) {
-    case PARSING_REQUEST_MESSAGE:parsingRequestMessage();
-      break;
+    case PARSING_REQUEST_MESSAGE:
+      if (parsingRequestMessage() == AGAIN) {
+        break;
+      }
     case HANDLING_STATIC_PAGE:handlingStaticPage();
       break;
     case HANDLING_DYNAMIC_PAGE_HEADER:break;

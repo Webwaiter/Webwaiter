@@ -29,7 +29,7 @@ class Connection {
   bool checkReadSuccess();
   bool checkTimeOut();
   void setConfigInfo();
-  void parsingRequestMessage();
+  ReturnState parsingRequestMessage();
   ReturnState handlingStaticPage();
   ReturnState writingStaticPage();
   ReturnState executeCgiProcess();
