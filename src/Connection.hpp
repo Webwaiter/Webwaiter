@@ -31,6 +31,7 @@ class Connection {
   void setConfigInfo();
   void parsingRequestMessage();
   ReturnState handlingStaticPage();
+  ReturnState writingStaticPage();
   void executeCgiProcess();
   void openStaticPage();
   void writingToPipe();
