@@ -49,3 +49,27 @@ void updateTime(time_t &cur_time) {
 double getTimeOut(time_t &base_time) {
   return (difftime(time(NULL), base_time));
 }
+
+in_addr changeIpToBinary(std::string ip) {
+  struct in_addr ret;
+
+  std::vector<std::string> ip_token = split(ip, ".");
+  ret.s_addr = ((atoi(ip_token[0].c_str()) << 24) | (atoi(ip_token[1].c_str()) << 16)
+                | (atoi(ip_token[2].c_str()) << 8) | atoi(ip_token[3].c_str()));
+  return ret;
+}
+
+std::string changeBinaryToIp(in_addr binary) {
+  std::string ip;
+  int mask = ~(~0u << 8);
+  int nums[4];
+  for (int i = 3; i >= 0; --i) {
+    nums[i] = binary.s_addr & mask;
+    binary.s_addr >>= 8;
+  }
+  for (int i = 0; i < 3; ++i) {
+    ip += numberToString(nums[i]) + '.'; 
+  }
+  ip.pop_back();
+  return ip;
+}
