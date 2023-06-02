@@ -41,14 +41,10 @@ class Connection {
 
  private:
   enum State {
-    PARSING_REQUEST_MESSAGE,
-    HANDLING_STATIC_PAGE,
-    HANDLING_DYNAMIC_PAGE_HEADER,
-    HANDLING_DYNAMIC_PAGE_BODY,
-    WRITING_TO_PIPE,
-    WRITING_STATIC_PAGE,
-    WRITING_DYNAMIC_PAGE_HEADER,
-    WRITING_DYNAMIC_PAGE_BODY
+    kReadingFromSocket,
+    kWritingToPipe,
+    kReadingFromPipe,
+    kWritingToSocket
   };
 
   ReturnState checkFileReadDone();
