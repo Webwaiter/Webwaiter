@@ -36,6 +36,7 @@ void RequestMessage::clear() {
   protocol_.clear();
   headers_.clear();
   body_.clear();
+  response_status_code_ = 200;
 }
 
 void RequestMessage::parseComplete(int response_status_code) {
