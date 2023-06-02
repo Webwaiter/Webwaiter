@@ -47,7 +47,7 @@ static void eraseConnection(Connection *ptr, std::set<Connection*> &connections,
   ptr->closeConnection();
   delete ptr;
   connections.erase(ptr);
-  for (std::deque<Connection*>::iterator it; it != work_queue.end(); ++it) {
+  for (std::deque<Connection*>::iterator it = work_queue.begin(); it != work_queue.end(); ++it) {
     if (*it == ptr) {
       work_queue.erase(it);
       break;
