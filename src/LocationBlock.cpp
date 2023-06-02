@@ -14,7 +14,7 @@ LocationBlock::LocationBlock(std::fstream &file, std::string url) :url_(url) {
 }
 
 static void checkBracePair(std::vector<std::string> &tmp_vec, std::stack<std::string> &brace) {
-  for (int i = 0; i < tmp_vec.size(); ++i) {
+  for (size_t i = 0; i < tmp_vec.size(); ++i) {
     if (tmp_vec[i] == "{") {
       brace.push("{");
     } else if (tmp_vec[i] == "}") {

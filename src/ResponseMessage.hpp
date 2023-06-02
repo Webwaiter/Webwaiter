@@ -27,7 +27,7 @@ class ResponseMessage {
   void createStatusLine();
   void createHeaderLine(const RequestMessage& request_message, const LocationBlock &location);
   void setLastModified(const RequestMessage &request_message, const LocationBlock &location);
-  void setAllowed(const RequestMessage &request_mesage, const LocationBlock &location);
+  void setAllowed(const LocationBlock &location);
   int &response_status_code_;
   const Config& config_;
   Kqueue& kqueue_;

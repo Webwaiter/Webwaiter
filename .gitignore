@@ -20,6 +20,7 @@
 
 # OS or Editor specific files
 .DS_Store
+.all_check
 a.out.dSYM
 Thumbs.db
 .vscode/

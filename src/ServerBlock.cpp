@@ -14,7 +14,7 @@ ServerBlock::ServerBlock(std::fstream &file) {
 }
 
 static void checkBracePair(std::vector<std::string> &tmp_vec, std::stack<std::string> &brace) {
-  for (int i = 0; i < tmp_vec.size(); ++i) {
+  for (size_t i = 0; i < tmp_vec.size(); ++i) {
     if (tmp_vec[i] == "{") {
       brace.push("{");
     } else if (tmp_vec[i] == "}") {
@@ -54,8 +54,8 @@ static void checkServerIP(std::string server_ip) {
   if (ip.size() != 4) {
     throw FAIL;
   }
-  for (int i = 0; i < ip.size(); ++i) {
-    for (int j = 0; j < ip[i].size(); ++j) {
+  for (size_t i = 0; i < ip.size(); ++i) {
+    for (size_t j = 0; j < ip[i].size(); ++j) {
       if (!isdigit(ip[i][j])) {
         throw FAIL;
       }
