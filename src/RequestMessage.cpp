@@ -8,15 +8,13 @@
 
 typedef std::deque<char>::iterator deque_iterator;
 typedef std::map<std::string, std::string>::iterator map_iterator;
-static const char kCrlf[] = {'\r', '\n'};
-static const size_t kCrlfLength = 2;
 
 static void toLower(char &c) {
   c = std::tolower(c);
 }
 
 RequestMessage::RequestMessage(int &response_status_code_)
-    : response_status_code_(response_status_code_), state_(kMethod), content_length_(0), chunk_size_(0) {}
+    : state_(kMethod), content_length_(0), chunk_size_(0), response_status_code_(response_status_code_){}
 
 void RequestMessage::appendLeftover(const char *buffer, size_t n) {
   for (size_t i = 0; i < n; ++i) {
@@ -194,7 +192,7 @@ void RequestMessage::checkBodyType() {
 }
 
 void RequestMessage::parseContentLengthBody() {
-  if (leftover_.size() < content_length_) {
+  if (leftover_.size() < static_cast<size_t>(content_length_)) {
     return;
   }
 
@@ -248,7 +246,7 @@ void RequestMessage::parseChunkData() {
   }
 
   size_t insertedData = crlf_pos - leftover_.begin();
-  if (insertedData != chunk_size_) {
+  if (insertedData != static_cast<size_t>(chunk_size_)) {
     parseComplete(400);
     return;
   }
@@ -297,6 +295,13 @@ const std::string &RequestMessage::getAProtocol() const {
 }
 const std::map<std::string, std::string> &RequestMessage::getHeaders() const {
   return headers_;
+}
+ssize_t RequestMessage::getContentLength() const {
+  return content_length_;
+}
+
+std::string RequestMessage::getContentType() const {
+  return headers_.count("Content-Type") ? headers_.at("Content-Type") : "";
 }
 const std::vector<char> &RequestMessage::getBody() const {
   return body_;

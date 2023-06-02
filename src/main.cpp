@@ -13,24 +13,15 @@
 #include "src/Server.hpp"
 #include "src/utils.hpp"
 
-static in_addr changeIpToBinary(std::string ip) {
-  struct in_addr ret;
-
-  std::vector<std::string> ip_token = split(ip, ".");
-  ret.s_addr = ((atoi(ip_token[0].c_str()) << 24) | (atoi(ip_token[1].c_str()) << 16)
-                | (atoi(ip_token[2].c_str()) << 8) | atoi(ip_token[3].c_str()));
-  return ret;
-}
-
 static void setupListenSocket(Config &config, std::vector<int> &listen_sockets) {
   const std::vector<ServerBlock> &server_blocks = config.getServerBlocks();
 
-  for (int i = 0; i < server_blocks.size(); ++i) {
+  for (size_t i = 0; i < server_blocks.size(); ++i) {
     struct sockaddr_in listen_addr;
     memset(&listen_addr, 0, sizeof(listen_addr));
     int listen_socket;
     listen_addr.sin_family = AF_INET;
-    listen_addr.sin_port = htons(server_blocks[i].getServerPort());
+    listen_addr.sin_port = htons(atoi(server_blocks[i].getServerPort().c_str()));
     listen_addr.sin_addr = changeIpToBinary(server_blocks[i].getServerIP());
 
     listen_socket = socket(PF_INET, SOCK_STREAM, 0);

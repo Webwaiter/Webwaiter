@@ -57,7 +57,7 @@ void ResponseMessage::setLastModified(const RequestMessage &request_message, con
   headers_["Last-Modified"] = getCurrentHTTPDate(&tmp.st_mtime);
 }
 
-void ResponseMessage::setAllowed(const RequestMessage &request_message, const LocationBlock &location) {
+void ResponseMessage::setAllowed(const LocationBlock &location) {
   std::set<std::string> allowed_set = location.getAllowedMethod();
 
   std::string allowed;
@@ -90,7 +90,7 @@ void ResponseMessage::createHeaderLine(const RequestMessage &request_message, co
     headers_["Location"] = location.getRedirection();
   }
   if (response_status_code_ == 405) {
-    setAllowed(request_message, location);
+    setAllowed(location);
   }
   
   headers_["Content-Length"] = numberToString(body_.size());

@@ -3,6 +3,8 @@
 #ifndef SRC_UTILS_HPP_
 #define SRC_UTILS_HPP_
 
+#include <netinet/in.h>
+
 #include <sstream>
 #include <string>
 #include <vector>
@@ -24,6 +26,9 @@ void trim(std::string& str);
 
 void updateTime(time_t &cur_time);
 double getTimeOut(time_t &base_time);
+
+in_addr changeIpToBinary(std::string ip);
+std::string changeBinaryToIp(in_addr binary);
 
 template <typename T>
 std::string numberToString(T number) {

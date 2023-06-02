@@ -14,7 +14,7 @@ Config::Config(const char *file_path) {
 }
 
 static void checkBracePair(std::vector<std::string> &tmp_vec, std::stack<std::string> &brace) {
-  for (int i = 0; i < tmp_vec.size(); ++i) {
+  for (size_t i = 0; i < tmp_vec.size(); ++i) {
     if (tmp_vec[i] == "{") {
       brace.push("{");
     } else if (tmp_vec[i] == "}") {
@@ -112,7 +112,7 @@ void Config::parseConfigFile(const char *file_path) {
       parseMimeFile(mime_path_.c_str());
       error_flag |= (1 << 4);
     } else if (tmp_vec[0] == "timeout" && tmp_vec.size() == 2) {
-      for (int i = 0; i < tmp_vec[1].size(); ++i) {
+      for (size_t i = 0; i < tmp_vec[1].size(); ++i) {
         if (!isdigit(tmp_vec[1][i])) {
           throw FAIL;
         }
@@ -169,7 +169,7 @@ void Config::parseMimeFile(const char *file_path) {
       continue;
     }
     if (tmp_vec.size() != 1) {
-      for (int i = 1; i < tmp_vec.size(); ++i) {
+      for (size_t i = 1; i < tmp_vec.size(); ++i) {
         mime_types_[tmp_vec[i]] = tmp_vec[0];
       }
     }

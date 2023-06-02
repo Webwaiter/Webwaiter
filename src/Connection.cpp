@@ -7,6 +7,8 @@
 #include <queue>
 #include <string>
 
+#include "src/Config.hpp"
+#include "src/LocationBlock.hpp"
 #include "src/Server.hpp"
 #include "src/utils.hpp"
 
@@ -14,7 +16,7 @@ Connection::Connection(int connection_socket, Kqueue& kqueue, const Config& conf
     : connection_socket_(connection_socket), file_fd_(-1), pipe_read_fd_(-1), pipe_write_fd_(-1),
       response_status_code_(200), kqueue_(kqueue), config_(config), read_(0), read_cnt_(0), leftover_data_(0),
       write_buffer_(NULL), written_(0), write_buffer_size_(0), request_message_(response_status_code_),
-      response_message_(response_status_code_, config_, kqueue_), cur_server_(NULL), cur_location_(NULL), time_(time(NULL)) {}
+      response_message_(response_status_code_, config_, kqueue_), selected_server_(NULL), selected_location_(NULL), time_(time(NULL)) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
@@ -37,28 +39,29 @@ void Connection::parsingRequestMessage() {
   */
 }
 
-ReturnState Connection::checkFileReadDone() {
-  if (leftover_data_ <= sizeof(read_buffer_)) 
-    if (read_ == leftover_data_) {
-      // 다 읽은 상태
-      close(file_fd_);
-      return SUCCESS;
-  }
-  // 다 못읽은 상태
-  kqueue_.setEvent(file_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
-  return AGAIN;
-}
+// ReturnState Connection::checkFileReadDone() {
+//   if (leftover_data_ <= sizeof(read_buffer_)) 
+//     if (read_ == leftover_data_) {
+//       // 다 읽은 상태
+//       close(file_fd_);
+//       return SUCCESS;
+//   }
+//   // 다 못읽은 상태
+//   kqueue_.setEvent(file_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
+//   return AGAIN;
+// }
 
 ReturnState Connection::handlingStaticPage() {
-  std::string path = cur_location_->getRootDir() + request_message_.getUri();
+  std::string path = selected_location_->getRootDir() + request_message_.getUri();
   response_message_.createBody(path);
-  response_message_.createResponseMessage(request_message_, *cur_location_);
+  response_message_.createResponseMessage(request_message_, *selected_location_);
   // update write buffer & write buffer size
   write_buffer_ = response_message_.getResponseMessage().data();
   write_buffer_size_ = response_message_.getResponseMessage().size();
   // write event enable & update state
   kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
   state_ = WRITING_STATIC_PAGE;
+  return SUCCESS;
 }
 
 void Connection::writingToPipe() {
@@ -68,12 +71,10 @@ void Connection::writingToPipe() {
 }
 
 ReturnState Connection::work(void) {
-  if (checkReadSuccess() == false) {
-    if (checkTimeOut()){
-      // connectionClose();
-      return CONNECTION_CLOSE;
-    }
-  }
+  //   if (checkTimeOut()){
+  //     // connectionClose();
+  //     return CONNECTION_CLOSE;
+  //   }
   switch (state_) {
     case PARSING_REQUEST_MESSAGE:parsingRequestMessage();
       break;
@@ -144,7 +145,7 @@ void Connection::closeConnection() {
 }
 
 ReturnState Connection::writingStaticPage() {
-  if (written_ < write_buffer_size_) {
+  if (static_cast<size_t>(written_) < write_buffer_size_) {
     kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
     return AGAIN;
   }
@@ -156,5 +157,123 @@ ReturnState Connection::writingStaticPage() {
     return CONNECTION_CLOSE;
   }
   state_ = PARSING_REQUEST_MESSAGE;
+  return SUCCESS;
+}
+
+void Connection::setConfigInfo() {
+  const ServerBlock &sb = config_.getServerBlocks()[0];
+  const LocationBlock &lb = sb.getLocationBlocks()[0];
+  selected_server_ = &sb;
+  selected_location_ = &lb;
+}
+
+static std::string getQueryString(std::string &uri) {
+  size_t query_pos = uri.find('?');
+  return query_pos == std::string::npos ? "" : uri.substr(query_pos + 1);
+}
+
+static std::string getScriptName(const std::string &uri, const std::string &extention) {
+  size_t dot_pos = uri.find("." + extention);
+  return uri.substr(0, dot_pos + extention.size() + 1);
+}
+
+char **Connection::setMetaVariables(std::map<std::string, std::string> &env) {
+  env["AUTH_TYPE"] = "";
+  env["REQUEST_URI"] = request_message_.getUri();
+  env["QUERY_STRING"] = getQueryString(env["REQUEST_URI"]);
+  env["CONTENT_LENGTH"] = numberToString(request_message_.getContentLength());
+  env["CONTENT_TYPE"] = request_message_.getContentType();
+  env["GATEWAY_INTERFACE"] = config_.getCgiVersion();
+  env["DOCUMENT_ROOT"] = selected_location_->getRootDir();
+  env["REQUEST_METHOD"] = request_message_.getMethod();
+  env["SERVER_NAME"] = selected_server_->getServerName();
+  env["SERVER_PORT"] = selected_server_->getServerPort();
+  env["SERVER_PROTOCOL"] = config_.getHttpVersion();
+  env["SERVER_SOFTWARE"] = config_.getServerProgramName();
+  std::string ip = changeBinaryToIp(client_addr_.sin_addr);
+  env["REMOTE_ADDR"] = ip;
+  env["REMOTE_IDENT"] = "";
+  env["REMOTE_USER"] = "";
+  env["REMOTE_HOST"] = env["REMOTE_ADDR"];
+  env["SCRIPT_NAME"] = getScriptName(env["REQUEST_URI"], selected_location_->getCgiExtension());
+  env["SCRIPT_FILENAME"] = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
+  env["PATH_INFO"] = env["SCRIPT_FILENAME"];
+  env["PATH_TRANSLATED"] = env["PATH_INFO"];
+  int n = env.size();
+  char **meta_variables = new char*[n + 1];
+  int i = 0;
+  for (std::map<std::string, std::string>::iterator it = env.begin();
+       it != env.end(); ++it) {
+    std::string s = it->first + '=' + it->second;
+    meta_variables[i] = new char[s.size() + 1];
+    std::strcpy(meta_variables[i], s.c_str());
+    ++i;
+  }
+  meta_variables[i] = 0;
+  return meta_variables;
+}
+
+static char **setCgiArguments(const std::string &cgi_path, std::string &script_filename) {
+  char** argv = new char*[3];
+  argv[0] = new char[cgi_path.size() + 1];
+  std::strcpy(argv[0], cgi_path.c_str());
+  argv[1] = new char[script_filename.size() + 1];
+  std::strcpy(argv[1], script_filename.c_str());
+  argv[2] = 0;
+  return argv;
+}
+
+ReturnState Connection::executeCgiProcess() {
+  int to_cgi[2];
+  int from_cgi[2];
+  if (pipe(to_cgi) < 0 || pipe(from_cgi) < 0) {
+    return FAIL;
+  }
+  pid_t pid = fork();
+  if (pid < 0) {
+    return FAIL;
+  }
+
+  // child process (CGI)
+  if (pid == 0) {
+    // plumbing
+    if (to_cgi[0] != STDIN_FILENO) {
+      if (dup2(to_cgi[0], STDIN_FILENO) != STDIN_FILENO) {
+        return FAIL;
+      }
+      close(to_cgi[0]);
+    }
+    if (from_cgi[1] != STDOUT_FILENO) {
+      if (dup2(from_cgi[1], STDOUT_FILENO) != STDOUT_FILENO) {
+        return FAIL;
+      }
+      close(from_cgi[1]);
+    }
+    for (int fd = STDERR_FILENO + 1; fd < OPEN_MAX; ++fd) {
+      close(fd);
+    }
+
+    // exec
+    std::map<std::string, std::string> env;
+    char **meta_variables = setMetaVariables(env);
+    char **cgi_argv = setCgiArguments(config_.getCgiPath(), env["SCRIPT_FILENAME"]);
+    if (execve(cgi_argv[0], cgi_argv, meta_variables) < 0) {
+      return FAIL;
+    }
+  }
+
+  // parent process (server)
+  close(to_cgi[0]);
+  close(from_cgi[1]);
+  kqueue_.setEvent(pid, EVFILT_PROC, EV_ADD, NOTE_EXIT | NOTE_EXITSTATUS, 0, this);
+  kqueue_.setEvent(from_cgi[0], EVFILT_READ, EV_ADD | EV_DISABLE, 0, 0, this);
+  if (request_message_.getMethod() == "POST") {
+    kqueue_.setEvent(to_cgi[1], EVFILT_WRITE, EV_ADD, 0, 0, this);
+    state_ = WRITING_TO_PIPE;
+  } else {
+    close(to_cgi[1]);
+    kqueue_.setEvent(from_cgi[0], EVFILT_READ, EV_ENABLE, 0, 0, this);
+    state_ = HANDLING_DYNAMIC_PAGE_HEADER;
+  }
   return SUCCESS;
 }

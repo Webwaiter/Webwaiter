@@ -20,6 +20,8 @@ class RequestMessage {
   const std::string &getUri() const;
   const std::string &getAProtocol() const;
   const std::map<std::string, std::string> &getHeaders() const;
+  ssize_t getContentLength() const;
+  std::string getContentType() const;
   const std::vector<char> &getBody() const;
 
  private:
