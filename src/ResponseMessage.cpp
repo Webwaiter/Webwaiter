@@ -19,10 +19,12 @@ void ResponseMessage::appendReadBufferToLeftoverBuffer(const char *read_buffer, 
 
 void ResponseMessage::createBody(const std::string &path) {
   std::ifstream file(path.c_str());
-  while (file) {
-    body_.push_back(file.get());
+  char c;
+  while ((c = file.get()) != -1 ) {
+    body_.push_back(c);
   }
 }
+
 void ResponseMessage::createStatusLine() {
   appendData(status_line_, config_.getHttpVersion());
   status_line_.push_back(' ');
@@ -35,11 +37,14 @@ void ResponseMessage::createStatusLine() {
   appendCrlf(status_line_);
 }
 
-std::string getCurrentHTTPDate(std::time_t *current_time) {
-  if (current_time == NULL) {
-   *current_time = std::time(NULL);
+std::string getHTTPDate(std::time_t *t) {
+  std::time_t current_time;
+  if (t == NULL) {
+   current_time = std::time(NULL);
+  } else {
+    current_time = *t;
   }
-  std::tm* timeInfo = std::gmtime(current_time);
+  std::tm* timeInfo = std::gmtime(&current_time);
 
   char buffer[128];
   std::strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", timeInfo);
@@ -54,7 +59,7 @@ void ResponseMessage::setLastModified(const RequestMessage &request_message, con
   if (stat(path.c_str(), &tmp) == -1) {
     return;
   }
-  headers_["Last-Modified"] = getCurrentHTTPDate(&tmp.st_mtime);
+  headers_["Last-Modified"] = getHTTPDate(&tmp.st_mtime);
 }
 
 void ResponseMessage::setAllowed(const LocationBlock &location) {
@@ -77,7 +82,7 @@ void ResponseMessage::createHeaderLine(const RequestMessage &request_message, co
   const std::map<std::string, std::string> &request_headers = request_message.getHeaders();
   
   headers_["Server"] = config_.getServerProgramName();
-  headers_["Date"] = getCurrentHTTPDate(NULL);
+  headers_["Date"] = getHTTPDate(NULL);
   if (request_headers.find("connection") != request_headers.end()) {
     headers_["Connection"] = request_headers.at("connection");
   } else {
@@ -94,6 +99,7 @@ void ResponseMessage::createHeaderLine(const RequestMessage &request_message, co
   }
   
   headers_["Content-Length"] = numberToString(body_.size());
+  //TODO: Add logic to find MIME type
   headers_["Content-Type"] = "text/html";
 
   for (std::map<std::string, std::string>::iterator it = headers_.begin(); it != headers_.end(); ++it) {
@@ -108,6 +114,7 @@ void ResponseMessage::createResponseMessage(const RequestMessage& request_messag
   createStatusLine();
   createHeaderLine(request_message, location);
   response_message_.insert(response_message_.end(), status_line_.begin(), status_line_.end());
+  response_message_.insert(response_message_.end(), header_line_.begin(), header_line_.end());
   response_message_.insert(response_message_.end(), body_.begin(), body_.end());
 }
 
