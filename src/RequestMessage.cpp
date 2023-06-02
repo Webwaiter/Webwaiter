@@ -29,6 +29,8 @@ bool RequestMessage::writeDone() {
 void RequestMessage::clear() {
   state_ = kMethod;
   written_ = 0;
+  content_length_ = 0;
+  chunk_size_ = 0;
   method_.clear();
   uri_.clear();
   protocol_.clear();
