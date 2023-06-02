@@ -29,9 +29,9 @@ class Connection {
   bool checkReadSuccess();
   bool checkTimeOut();
   void setConfigInfo();
-  ReturnState parsingRequestMessage();
-  ReturnState handlingStaticPage();
-  ReturnState writingStaticPage();
+  void parsingRequestMessage();
+  void handlingStaticPage();
+  void writingToSocket();
   ReturnState executeCgiProcess();
   void openStaticPage();
   void writingToPipe();
@@ -76,6 +76,7 @@ class Connection {
 
   struct sockaddr_in client_addr_;
   time_t time_;
+  bool is_connection_close_;
   State state_;
 };
 
