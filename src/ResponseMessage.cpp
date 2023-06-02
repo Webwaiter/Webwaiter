@@ -59,7 +59,7 @@ void ResponseMessage::setLastModified(const RequestMessage &request_message, con
   if (stat(path.c_str(), &tmp) == -1) {
     return;
   }
-  headers_["Last-Modified"] = getCurrentHTTPDate(&tmp.st_mtime);
+  headers_["Last-Modified"] = getHTTPDate(&tmp.st_mtime);
 }
 
 void ResponseMessage::setAllowed(const LocationBlock &location) {
@@ -82,7 +82,7 @@ void ResponseMessage::createHeaderLine(const RequestMessage &request_message, co
   const std::map<std::string, std::string> &request_headers = request_message.getHeaders();
   
   headers_["Server"] = config_.getServerProgramName();
-  headers_["Date"] = getCurrentHTTPDate(NULL);
+  headers_["Date"] = getHTTPDate(NULL);
   if (request_headers.find("connection") != request_headers.end()) {
     headers_["Connection"] = request_headers.at("connection");
   } else {
