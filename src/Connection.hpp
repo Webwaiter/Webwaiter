@@ -32,7 +32,7 @@ class Connection {
   void parsingRequestMessage();
   ReturnState handlingStaticPage();
   ReturnState writingStaticPage();
-  void executeCgiProcess();
+  ReturnState executeCgiProcess();
   void openStaticPage();
   void writingToPipe();
   ReturnState writeHandler(const struct kevent &event);
@@ -52,6 +52,7 @@ class Connection {
   };
 
   ReturnState checkFileReadDone();
+  char **setMetaVariables(std::map<std::string, std::string> &env);
 
   int connection_socket_;
   int file_fd_;
@@ -74,8 +75,8 @@ class Connection {
   RequestMessage request_message_;
   ResponseMessage response_message_;
 
-  ServerBlock *cur_server_;
-  LocationBlock *cur_location_;
+  const ServerBlock *selected_server_;
+  const LocationBlock *selected_location_;
 
   struct sockaddr_in client_addr_;
   time_t time_;
