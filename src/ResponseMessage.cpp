@@ -123,6 +123,10 @@ const std::vector<char> &ResponseMessage::getBody() const {
   return body_;
 }
 
+const std::map<std::string, std::string> &ResponseMessage::getHeaders() const {
+  return headers_;
+}
+
 const std::vector<char> &ResponseMessage::getResponseMessage() const {
   return response_message_;
 }
