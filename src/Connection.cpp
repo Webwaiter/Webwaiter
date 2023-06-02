@@ -152,7 +152,9 @@ void Connection::writingToSocket() {
     is_connection_close_ = true;
   }
   request_message_.clear();
+  //TODO: clear connection
   state_ = kReadingFromSocket;
+  kqueue_.setEvent(connection_socket_, EVFILT_READ, EV_ENABLE, 0, 0, this);
 }
 
 void Connection::setConfigInfo() {
