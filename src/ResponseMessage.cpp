@@ -37,7 +37,7 @@ void ResponseMessage::createStatusLine() {
   appendCrlf(status_line_);
 }
 
-std::string getCurrentHTTPDate(std::time_t *t) {
+std::string getHTTPDate(std::time_t *t) {
   std::time_t current_time;
   if (t == NULL) {
    current_time = std::time(NULL);
