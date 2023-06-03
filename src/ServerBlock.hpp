@@ -17,7 +17,7 @@
 
 class ServerBlock {
  public:
-  explicit ServerBlock(std::fstream &file);
+  explicit ServerBlock(std::ifstream &file);
   const std::map<std::string, std::string> &getDefaultErrorPages(void) const;
   const int &getClientBodySize() const;
   const std::string &getServerIP() const;
@@ -26,7 +26,7 @@ class ServerBlock {
   const std::vector<LocationBlock> &getLocationBlocks() const;
 
  private:
-  void parseServerBlock(std::fstream &file);
+  void parseServerBlock(std::ifstream &file);
   void checkSemantics() const;
   std::map<std::string, std::string> default_error_pages_;
   int client_body_size_;

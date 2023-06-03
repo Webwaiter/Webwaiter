@@ -4,11 +4,11 @@
 
 #include "src/utils.hpp"
 
-LocationBlock::LocationBlock(std::fstream &file, std::string url) :url_(url) {
+LocationBlock::LocationBlock(std::ifstream &file, std::string url) :url_(url) {
   try {
     parseLocationBlock(file);
     checkSemantics();
-  } catch (int) {
+  } catch (ReturnState) {
     throw FAIL;
   }
 }
@@ -71,7 +71,7 @@ void LocationBlock::checkSemantics() const {
   checkCGIExtention(cgi_extension_);
 }
 
-void LocationBlock::parseLocationBlock(std::fstream &file) {
+void LocationBlock::parseLocationBlock(std::ifstream &file) {
   int error_flag = 0;
   std::stack<std::string> brace;
   brace.push("{");

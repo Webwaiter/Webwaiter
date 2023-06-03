@@ -53,13 +53,19 @@ static void setupListenSocket(Config &config, std::vector<int> &listen_sockets) 
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
+  if (!(argc == 2 || argc == 1)) {
     return 1;
   }
-  Config config(argv[1]);
-  std::vector<int> listen_socket;
-  setupListenSocket(config, listen_socket);
+  try {
+    Config config(argv[1]);
+    std::vector<int> listen_socket;
+    setupListenSocket(config, listen_socket);
 
-  Server server(config, listen_socket);
-  server.run();
+    Server server(config, listen_socket);
+    server.run();
+  } catch (ReturnState) {
+    std::cout << "error in config file\n";
+    return 1;
+  }
+  return 0;
 }
