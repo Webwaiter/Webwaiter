@@ -159,8 +159,7 @@ void Connection::writingToSocket() {
   if (response_headers.at("Connection") == "close") {
     is_connection_close_ = true;
   }
-  request_message_.clear();
-  //TODO: clear connection
+  clear();
   state_ = kReadingFromSocket;
   kqueue_.setEvent(connection_socket_, EVFILT_READ, EV_ENABLE, 0, 0, this);
 }
