@@ -56,11 +56,14 @@ static void eraseConnection(Connection *ptr, std::set<Connection*> &connections,
 }
 
 void Server::run() {
+  struct timespec timeout;
+  timeout.tv_sec = 1;
+  timeout.tv_nsec = 0;
   std::set<Connection*> connections;
   std::deque<Connection*> work_queue;
   struct kevent event_list[10];
   while (1) {
-    int detected_cnt = kevent(kqueue_.fd_, NULL, 0, event_list, 10, NULL);
+    int detected_cnt = kevent(kqueue_.fd_, NULL, 0, event_list, 10, &timeout);
     for (int i = 0; i < detected_cnt; ++i) {
       int id = event_list[i].ident;
       int filter = event_list[i].filter;
