@@ -57,7 +57,13 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   try {
-    Config config(argv[1]);
+    std::string config_path;
+    if (argc == 1) {
+      config_path = "docs/conf/default.conf";
+    } else {
+      config_path = argv[1];
+    }
+    Config config(config_path.c_str());
     std::vector<int> listen_socket;
     setupListenSocket(config, listen_socket);
 
