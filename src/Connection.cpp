@@ -13,7 +13,7 @@
 #include "src/utils.hpp"
 
 Connection::Connection(int connection_socket, Kqueue& kqueue, const Config& config)
-    : connection_socket_(connection_socket), file_fd_(-1), pipe_read_fd_(-1), pipe_write_fd_(-1),
+    : connection_socket_(connection_socket), pipe_read_fd_(-1), pipe_write_fd_(-1),
       response_status_code_(200), kqueue_(kqueue), config_(config), read_(0), read_cnt_(0), leftover_data_(0),
       write_buffer_(NULL), written_(0), write_buffer_size_(0), request_message_(response_status_code_),
       response_message_(response_status_code_, config_, kqueue_), selected_server_(NULL), selected_location_(NULL), time_(time(NULL)),
@@ -27,6 +27,7 @@ void Connection::parsingRequestMessage() {
   if (request_message_.parse(read_buffer_, read_) == AGAIN) {
     return;
   }
+  updateTime(time_);
   // TODO: 파싱유효성 검사
   setConfigInfo();
   // TODO: allowed method 검사
@@ -66,11 +67,23 @@ void Connection::writingToPipe() {
   }
 }
 
+bool Connection::isTimeOut() {
+  if (state_ == kReadingFromSocket && read_ == 0) {
+     if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
+      return true;
+    }
+  } else {
+     if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
+      return true;
+     }
+  }
+  return false;
+}
+
 ReturnState Connection::work() {
-  //   if (checkTimeOut()){
-  //     // connectionClose();
-  //     return CONNECTION_CLOSE;
-  //   }
+  if (isTimeOut()){
+    return CONNECTION_CLOSE;
+  }
   switch (state_) {
     case kReadingFromSocket:
       parsingRequestMessage();
@@ -82,6 +95,7 @@ ReturnState Connection::work() {
       break;
     case kWritingToSocket:
       writingToSocket();
+      updateTime(time_);
       break;
   }
   if (is_connection_close_) {
@@ -128,9 +142,6 @@ char *Connection::getReadBuffer() {
 
 void Connection::closeConnection() {
   close(connection_socket_);
-  if (file_fd_ != -1) {
-    close(file_fd_);
-  }
   if (pipe_read_fd_ != -1) {
     close(pipe_read_fd_);
   }
@@ -144,9 +155,6 @@ void Connection::writingToSocket() {
     kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
     return;
   }
-  written_ = 0;
-  write_buffer_ = NULL;
-  write_buffer_size_ = 0;
   const std::map<std::string, std::string> &response_headers = response_message_.getHeaders();
   if (response_headers.at("Connection") == "close") {
     is_connection_close_ = true;
@@ -273,4 +281,16 @@ ReturnState Connection::executeCgiProcess() {
     state_ = kReadingFromPipe;
   }
   return SUCCESS;
+}
+
+void Connection::clear() {
+  response_status_code_ = 200;
+  read_ = 0;
+  read_cnt_ = 0;
+  leftover_data_ = 0;
+  written_ = 0;
+  write_buffer_ = NULL;
+  write_buffer_size_ = 0;
+  request_message_.clear();
+  response_message_.clear();
 }

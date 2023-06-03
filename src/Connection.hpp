@@ -27,7 +27,7 @@ class Connection {
   char *getReadBuffer();
   ReturnState work();
   bool checkReadSuccess();
-  bool checkTimeOut();
+  bool isTimeOut();
   void setConfigInfo();
   void parsingRequestMessage();
   void handlingStaticPage();
@@ -38,6 +38,7 @@ class Connection {
   ReturnState writeHandler(const struct kevent &event);
   ReturnState readHandler(const struct kevent &event);
   void closeConnection();
+  void clear();
 
  private:
   enum State {
@@ -51,7 +52,6 @@ class Connection {
   char **setMetaVariables(std::map<std::string, std::string> &env);
 
   int connection_socket_;
-  int file_fd_;
   int pipe_read_fd_;
   int pipe_write_fd_;
   int response_status_code_;
