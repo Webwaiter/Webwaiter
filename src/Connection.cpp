@@ -2,6 +2,8 @@
 
 #include "src/Connection.hpp"
 
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include <queue>
@@ -158,10 +160,29 @@ ReturnState Connection::writingStaticPage() {
 }
 
 void Connection::setConfigInfo() {
-  const ServerBlock &sb = config_.getServerBlocks()[0];
-  const LocationBlock &lb = sb.getLocationBlocks()[0];
-  selected_server_ = &sb;
-  selected_location_ = &lb;
+  struct sockaddr_in addr;
+  socklen_t addrlen;
+  getsockname(connection_socket_, &addr, &addrlen);
+  const std::string &server_ip = changeBinaryToIp(addr.sin_addr);
+  const std::string &server_port = numberToString(ntohs(addr.sin_port));
+  const std::string &server_name = request_message_.getHeaders().at("host");
+  const std::vector<ServerBlock> &sbv = config_.getServerBlocks();
+  for (size_t i = 0; i < sbv.size(); ++i) {
+    if (sbv[i].getServerIp() == server_ip && sbv[i].getServerPort() == server_port) {
+      if (sbv[i].getServerName() == server_name) {
+        selected_server_ = &sbv[i];
+        break;
+      }
+      if (selected_server_ == NULL) {
+        selected_server_ = &sbv[i];
+      }
+    }
+  }
+  const std::string &uri = request_message_.getUri();
+  const std::vector<LocationBlock> &lbv = selected_server_.getLocationBlocks();
+  for (size_t i = 0; i < lbv.size(); ++i) {
+    selected_location_ = &lbv[i];
+  }
 }
 
 static std::string getQueryString(std::string &uri) {
