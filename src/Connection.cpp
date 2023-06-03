@@ -179,9 +179,14 @@ void Connection::setConfigInfo() {
     }
   }
   const std::string &uri = request_message_.getUri();
+  size_t max_match_count = 0;
   const std::vector<LocationBlock> &lbv = selected_server_.getLocationBlocks();
   for (size_t i = 0; i < lbv.size(); ++i) {
-    selected_location_ = &lbv[i];
+    size_t match_count = uri.find(lbv[i].getUrl());
+    if (match_count != std::string::npos && match_count > max_match_count) {
+      selected_location_ = &lbv[i];
+      max_match_count = match_count;
+    }
   }
 }
 
