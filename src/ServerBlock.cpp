@@ -4,11 +4,11 @@
 
 #include "src/utils.hpp"
 
-ServerBlock::ServerBlock(std::fstream &file) {
+ServerBlock::ServerBlock(std::ifstream &file) {
   try {
     parseServerBlock(file);
     checkSemantics();
-  } catch (int) {
+  } catch (ReturnState) {
     throw FAIL;
   }
 }
@@ -86,7 +86,7 @@ void ServerBlock::checkSemantics() const {
   checkServerPort(server_port_);
 }
 
-void ServerBlock::parseServerBlock(std::fstream &file) {
+void ServerBlock::parseServerBlock(std::ifstream &file) {
   int error_flag = 0;
   std::stack<std::string> brace;
   brace.push("{");

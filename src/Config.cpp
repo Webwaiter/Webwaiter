@@ -8,7 +8,7 @@ Config::Config(const char *file_path) {
   try {
     parseConfigFile(file_path);
     checkSemantics();
-  } catch(int) {
+  } catch(ReturnState) {
     throw FAIL;
   }
 }
@@ -73,11 +73,11 @@ void Config::checkSemantics() const {
 }
 
 void Config::parseConfigFile(const char *file_path) {
-  std::fstream file;
+  std::ifstream file;
   int error_flag = 0;
   std::stack<std::string> brace;
 
-  file.open(file_path, std::fstream::in);
+  file.open(file_path);
   if (!file.is_open()) {
     throw FAIL;
   }
@@ -133,9 +133,9 @@ void Config::parseConfigFile(const char *file_path) {
 }
 
 void Config::parseStatusFile(const char *file_path) {
-  std::fstream file;
+  std::ifstream file;
 
-  file.open(file_path, std::fstream::in);
+  file.open(file_path);
   if (!file.is_open()) {
     throw FAIL;
   }
@@ -154,9 +154,9 @@ void Config::parseStatusFile(const char *file_path) {
 }
 
 void Config::parseMimeFile(const char *file_path) {
-  std::fstream file;
+  std::ifstream file;
 
-  file.open(file_path, std::fstream::in);
+  file.open(file_path);
   if (!file.is_open()) {
     throw FAIL;
   }

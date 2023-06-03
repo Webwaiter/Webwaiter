@@ -14,7 +14,7 @@
 
 class LocationBlock {
  public:
-  explicit LocationBlock(std::fstream &file, std::string url);
+  explicit LocationBlock(std::ifstream &file, std::string url);
   const std::string &getUrl() const;
   const std::string &getRootDir() const;
   const std::set<std::string> &getAllowedMethod() const;
@@ -24,7 +24,7 @@ class LocationBlock {
   const std::string &getRedirection() const;
 
  private: 
-  void parseLocationBlock(std::fstream &file);
+  void parseLocationBlock(std::ifstream &file);
   void checkSemantics() const;
   std::string url_;
   std::string root_dir_;
