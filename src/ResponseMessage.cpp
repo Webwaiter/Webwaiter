@@ -6,15 +6,33 @@
 
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 #include "src/RequestMessage.hpp"
 #include "src/utils.hpp"
 
+typedef std::deque<char>::iterator deque_iterator;
+
 ResponseMessage::ResponseMessage(int &response_status_code, const Config& config, Kqueue& kqueue) : response_status_code_(response_status_code), config_(config), kqueue_(kqueue) {}
 void ResponseMessage::appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read) {
   for (ssize_t i = 0; i < read; ++i) {
-    body_.push_back(read_buffer[i]);
+    leftover_.push_back(read_buffer[i]);
   }
+}
+
+void ResponseMessage::parseCgiBody() {
+  deque_iterator line_pos = std::search(leftover_.begin(), leftover_.end(), kNlnl, kNlnl + kNlnlLength);
+  if (line_pos != leftover_.end()) {
+    body_.insert(body_.begin(), line_pos + kNlnlLength, leftover_.end());
+  }
+}
+void ResponseMessage::parseCgiOutput() {
+  // 각 헤더 라인의 끝에는 newline으로 구분된다
+  // 헤더 필드와 본문은 newline한줄로 구분된다
+  // 즉, 연속되는 newline 2개가 있으면 본문이 있는 것이다
+  parseCgiBody();
+  
+
 }
 
 void ResponseMessage::createBody(const std::string &path) {
@@ -120,6 +138,7 @@ void ResponseMessage::createResponseMessage(const RequestMessage& request_messag
 
 void ResponseMessage::clear() {
   headers_.clear();
+  leftover_.clear();
   status_line_.clear();
   header_line_.clear();
   body_.clear();

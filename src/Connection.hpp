@@ -30,6 +30,7 @@ class Connection {
   bool isTimeOut();
   void setConfigInfo();
   void parsingRequestMessage();
+  void parsingCgiOutput();
   void handlingStaticPage();
   void writingToSocket();
   ReturnState executeCgiProcess();
@@ -48,7 +49,7 @@ class Connection {
     kWritingToSocket
   };
 
-  ReturnState checkFileReadDone();
+  ReturnState checkPipeReadDone();
   char **setMetaVariables(std::map<std::string, std::string> &env);
 
   int connection_socket_;

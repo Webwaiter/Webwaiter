@@ -37,17 +37,25 @@ void Connection::parsingRequestMessage() {
   handlingStaticPage();
 }
 
-// ReturnState Connection::checkFileReadDone() {
-//   if (leftover_data_ <= sizeof(read_buffer_)) 
-//     if (read_ == leftover_data_) {
-//       // 다 읽은 상태
-//       close(file_fd_);
-//       return SUCCESS;
-//   }
-//   // 다 못읽은 상태
-//   kqueue_.setEvent(file_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
-//   return AGAIN;
-// }
+void Connection::parsingCgiOutput() {
+  if (checkPipeReadDone() == AGAIN) {
+    kqueue_.setEvent(pipe_read_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
+    return;
+  }
+  response_message_.parseCgiOutput();
+}
+
+ReturnState Connection::checkPipeReadDone() {
+  response_message_.appendReadBufferToLeftoverBuffer(read_buffer_, read_);
+  if (leftover_data_ <= sizeof(read_buffer_)) 
+    if (read_ == leftover_data_) {
+      // 다 읽은 상태
+      close(pipe_read_fd_);
+      return SUCCESS;
+  }
+  // 다 못읽은 상태
+  return AGAIN;
+}
 
 void Connection::handlingStaticPage() {
   std::string path = selected_location_->getRootDir() + request_message_.getUri();
