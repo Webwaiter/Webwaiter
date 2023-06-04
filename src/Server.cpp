@@ -56,9 +56,7 @@ static void eraseConnection(Connection *ptr, std::set<Connection*> &connections,
 }
 
 void Server::run() {
-  struct timespec timeout;
-  timeout.tv_sec = 1;
-  timeout.tv_nsec = 0;
+  struct timespec timeout = {0, 0};
   std::set<Connection*> connections;
   std::deque<Connection*> work_queue;
   struct kevent event_list[10];
