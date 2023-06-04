@@ -22,6 +22,7 @@ class ResponseMessage {
   const std::map<std::string, std::string> &getHeaders() const;
   const std::vector<char> &getResponseMessage() const;
   void createBody(const std::string &path);
+  void clear();
 
  private:
   void createStatusLine();

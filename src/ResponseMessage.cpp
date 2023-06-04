@@ -118,6 +118,14 @@ void ResponseMessage::createResponseMessage(const RequestMessage& request_messag
   response_message_.insert(response_message_.end(), body_.begin(), body_.end());
 }
 
+void ResponseMessage::clear() {
+  headers_.clear();
+  status_line_.clear();
+  header_line_.clear();
+  body_.clear();
+  response_message_.clear();
+}
+
 const std::vector<char> &ResponseMessage::getStatusLine() const {
   return status_line_;
 }

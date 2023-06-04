@@ -27,35 +27,31 @@ class Connection {
   char *getReadBuffer();
   ReturnState work();
   bool checkReadSuccess();
-  bool checkTimeOut();
+  bool isTimeOut();
   void setConfigInfo();
   void parsingRequestMessage();
-  ReturnState handlingStaticPage();
-  ReturnState writingStaticPage();
+  void handlingStaticPage();
+  void writingToSocket();
   ReturnState executeCgiProcess();
   void openStaticPage();
   void writingToPipe();
   ReturnState writeHandler(const struct kevent &event);
   ReturnState readHandler(const struct kevent &event);
   void closeConnection();
+  void clear();
 
  private:
   enum State {
-    PARSING_REQUEST_MESSAGE,
-    HANDLING_STATIC_PAGE,
-    HANDLING_DYNAMIC_PAGE_HEADER,
-    HANDLING_DYNAMIC_PAGE_BODY,
-    WRITING_TO_PIPE,
-    WRITING_STATIC_PAGE,
-    WRITING_DYNAMIC_PAGE_HEADER,
-    WRITING_DYNAMIC_PAGE_BODY
+    kReadingFromSocket,
+    kWritingToPipe,
+    kReadingFromPipe,
+    kWritingToSocket
   };
 
   ReturnState checkFileReadDone();
   char **setMetaVariables(std::map<std::string, std::string> &env);
 
   int connection_socket_;
-  int file_fd_;
   int pipe_read_fd_;
   int pipe_write_fd_;
   int response_status_code_;
@@ -80,6 +76,7 @@ class Connection {
 
   struct sockaddr_in client_addr_;
   time_t time_;
+  bool is_connection_close_;
   State state_;
 };
 

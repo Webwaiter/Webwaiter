@@ -47,7 +47,7 @@ static void eraseConnection(Connection *ptr, std::set<Connection*> &connections,
   ptr->closeConnection();
   delete ptr;
   connections.erase(ptr);
-  for (std::deque<Connection*>::iterator it; it != work_queue.end(); ++it) {
+  for (std::deque<Connection*>::iterator it = work_queue.begin(); it != work_queue.end(); ++it) {
     if (*it == ptr) {
       work_queue.erase(it);
       break;
@@ -56,11 +56,12 @@ static void eraseConnection(Connection *ptr, std::set<Connection*> &connections,
 }
 
 void Server::run() {
+  struct timespec timeout = {0, 0};
   std::set<Connection*> connections;
   std::deque<Connection*> work_queue;
   struct kevent event_list[10];
   while (1) {
-    int detected_cnt = kevent(kqueue_.fd_, NULL, 0, event_list, 10, NULL);
+    int detected_cnt = kevent(kqueue_.fd_, NULL, 0, event_list, 10, &timeout);
     for (int i = 0; i < detected_cnt; ++i) {
       int id = event_list[i].ident;
       int filter = event_list[i].filter;
