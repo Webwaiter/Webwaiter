@@ -5,10 +5,6 @@
 typedef std::deque<char>::iterator deque_iterator;
 typedef std::map<std::string, std::string>::iterator map_iterator;
 
-static void toLower(char &c) {
-  c = std::tolower(c);
-}
-
 RequestMessage::RequestMessage(int &response_status_code_)
     : state_(kMethod), content_length_(0), chunk_size_(0), response_status_code_(response_status_code_) {}
 

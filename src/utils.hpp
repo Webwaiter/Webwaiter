@@ -11,7 +11,9 @@
 #include <ctime>
 
 static const char kCrlf[] = {'\r', '\n'};
+static const char kNlnl[] = {'\n', '\n'};
 static const size_t kCrlfLength = 2;
+static const size_t kNlnlLength = 2;
 
 enum ReturnState {
   SUCCESS,
@@ -29,6 +31,7 @@ double getTimeOut(time_t &base_time);
 
 in_addr changeIpToBinary(std::string ip);
 std::string changeBinaryToIp(in_addr binary);
+void toLower(char &c);
 
 template <typename T>
 std::string numberToString(T number) {
