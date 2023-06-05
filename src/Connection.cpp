@@ -25,6 +25,7 @@ int Connection::getConnectionSocket() const {
 
 void Connection::parsingRequestMessage() {
   if (request_message_.parse(read_buffer_, read_) == AGAIN) {
+    kqueue_.setEvent(connection_socket_, EVFILT_READ, EV_ENABLE, 0, 0, this);
     return;
   }
   updateTime(time_);
@@ -43,6 +44,7 @@ ReturnState Connection::checkPipeReadDone() {
     if (read_ == leftover_data_) {
       // 다 읽은 상태
       close(pipe_read_fd_);
+      pipe_read_fd_ = -1;
       return SUCCESS;
   }
   // 다 못읽은 상태
@@ -166,7 +168,7 @@ void Connection::writingToSocket() {
     return;
   }
   const std::map<std::string, std::string> &response_headers = response_message_.getHeaders();
-  if (response_headers.at("Connection") == "close") {
+  if (response_headers.at("connection") == "close") {
     is_connection_close_ = true;
   }
   clear();
@@ -279,6 +281,8 @@ ReturnState Connection::executeCgiProcess() {
   // parent process (server)
   close(to_cgi[0]);
   close(from_cgi[1]);
+  pipe_read_fd_ = from_cgi[0];
+  pipe_write_fd_ = to_cgi[1];
   kqueue_.setEvent(pid, EVFILT_PROC, EV_ADD, NOTE_EXIT | NOTE_EXITSTATUS, 0, this);
   kqueue_.setEvent(from_cgi[0], EVFILT_READ, EV_ADD | EV_DISABLE, 0, 0, this);
   if (request_message_.getMethod() == "POST") {

@@ -306,7 +306,7 @@ ssize_t RequestMessage::getContentLength() const {
 }
 
 std::string RequestMessage::getContentType() const {
-  return headers_.count("Content-Type") ? headers_.at("Content-Type") : "";
+  return headers_.count("content-type") ? headers_.at("content-type") : "";
 }
 const std::vector<char> &RequestMessage::getBody() const {
   return body_;
