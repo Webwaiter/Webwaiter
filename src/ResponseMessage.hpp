@@ -16,7 +16,7 @@ class ResponseMessage {
   explicit ResponseMessage(int &response_status_code, const Config& config, Kqueue& kqueue);
   ResponseMessage &operator=(const ResponseMessage &rhs);
   void appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read);
-  void parseCgiOutput();
+  void parseCgiOutput(const ServerBlock &server_block);
   void createResponseMessage(const RequestMessage& request_message, const LocationBlock &location);
   const std::vector<char> &getStatusLine() const;
   const std::vector<char> &getHeaderLine() const;
@@ -32,6 +32,8 @@ class ResponseMessage {
   void setLastModified(const RequestMessage &request_message, const LocationBlock &location);
   void setAllowed(const LocationBlock &location);
   void parseCgiBody();
+  void parseCgiHeader(const ServerBlock &server_block);
+  void parseField(std::string &field);
   int &response_status_code_;
   const Config& config_;
   Kqueue& kqueue_;

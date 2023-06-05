@@ -30,8 +30,8 @@ class Connection {
   bool isTimeOut();
   void setConfigInfo();
   void parsingRequestMessage();
-  void parsingCgiOutput();
   void handlingStaticPage();
+  void handlingDynamicPage();
   void writingToSocket();
   ReturnState executeCgiProcess();
   void openStaticPage();
