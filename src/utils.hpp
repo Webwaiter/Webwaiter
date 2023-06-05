@@ -11,9 +11,9 @@
 #include <ctime>
 
 static const char kCrlf[] = {'\r', '\n'};
-static const char kNlnl[] = {'\n', '\n'};
+static const char kNl[] = {'\n'};
 static const size_t kCrlfLength = 2;
-static const size_t kNlnlLength = 2;
+static const size_t kNlLength = 1;
 
 enum ReturnState {
   SUCCESS,
