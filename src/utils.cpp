@@ -73,3 +73,7 @@ std::string changeBinaryToIp(in_addr binary) {
   ip.pop_back();
   return ip;
 }
+
+void toLower(char &c) {
+  c = std::tolower(c);
+}

@@ -37,17 +37,26 @@ void Connection::parsingRequestMessage() {
   handlingStaticPage();
 }
 
-// ReturnState Connection::checkFileReadDone() {
-//   if (leftover_data_ <= sizeof(read_buffer_)) 
-//     if (read_ == leftover_data_) {
-//       // 다 읽은 상태
-//       close(file_fd_);
-//       return SUCCESS;
-//   }
-//   // 다 못읽은 상태
-//   kqueue_.setEvent(file_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
-//   return AGAIN;
-// }
+ReturnState Connection::checkPipeReadDone() {
+  response_message_.appendReadBufferToLeftoverBuffer(read_buffer_, read_);
+  if (leftover_data_ <= static_cast<long>(sizeof(read_buffer_))) 
+    if (read_ == leftover_data_) {
+      // 다 읽은 상태
+      close(pipe_read_fd_);
+      return SUCCESS;
+  }
+  // 다 못읽은 상태
+  return AGAIN;
+}
+
+void Connection::handlingDynamicPage() {
+  if (checkPipeReadDone() == AGAIN) {
+    kqueue_.setEvent(pipe_read_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
+    return;
+  }
+  response_message_.parseCgiOutput(*selected_server_);
+  response_message_.createResponseMessage(request_message_, *selected_location_);
+}
 
 void Connection::handlingStaticPage() {
   std::string path = selected_location_->getRootDir() + request_message_.getUri();
@@ -91,7 +100,8 @@ ReturnState Connection::work() {
     case kWritingToPipe:
       break;
     case kReadingFromPipe:
-      // f();
+      handlingDynamicPage();
+      updateTime(time_);
       break;
     case kWritingToSocket:
       writingToSocket();
