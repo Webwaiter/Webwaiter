@@ -25,6 +25,7 @@ class Connection {
   Connection(int connection_socket, Kqueue& kqueue, const Config& config);
   int getConnectionSocket() const;
   char *getReadBuffer();
+  int getPipeReadFd() const;
   ReturnState work();
   bool checkReadSuccess();
   bool isTimeOut();
@@ -33,7 +34,7 @@ class Connection {
   void handlingStaticPage();
   void handlingDynamicPage();
   void writingToSocket();
-  ReturnState executeCgiProcess();
+  void executeCgiProcess();
   void openStaticPage();
   void writingToPipe();
   ReturnState writeHandler(const struct kevent &event);

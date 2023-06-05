@@ -24,6 +24,7 @@ class RequestMessage {
   ssize_t getContentLength() const;
   std::string getContentType() const;
   const std::vector<char> &getBody() const;
+  void printRequestMessage();
 
  private:
   enum ParseState {
