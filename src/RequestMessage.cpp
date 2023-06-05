@@ -2,6 +2,8 @@
 
 #include "src/RequestMessage.hpp"
 
+#include <iostream>
+
 typedef std::deque<char>::iterator deque_iterator;
 typedef std::map<std::string, std::string>::iterator map_iterator;
 
@@ -62,6 +64,20 @@ ReturnState RequestMessage::parse(const char *buffer, size_t read) {
     return SUCCESS;
   }
   return AGAIN;
+}
+
+void RequestMessage::printRequestMessage() {
+  std::cout << method_ << "\n";
+  std::cout << uri_ << "\n";
+  std::cout << protocol_ << "\n";
+  for (map_iterator i = headers_.begin(); headers_.end() != i; ++i) {
+    std::cout << "[" << i->first << "][" << i->second << "]\n";
+  }
+  for (size_t i = 0; i < body_.size(); ++i) {
+    std::cout << body_[i];
+  }
+  std::cout << std::endl;
+
 }
 
 void RequestMessage::parseStartLine() {

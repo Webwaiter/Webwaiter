@@ -77,20 +77,25 @@ void Server::run() {
       } else if (filter == EVFILT_READ) {
         if (ptr->readHandler(event_list[i]) == FAIL) {
           eraseConnection(ptr, connections, work_queue);
+          break;
         }
         kqueue_.setEvent(id, EVFILT_READ, EV_DISABLE, 0, 0, NULL);
       } else if (filter == EVFILT_WRITE) {
         if (ptr->writeHandler(event_list[i]) == FAIL) {
           eraseConnection(ptr, connections, work_queue);
+          break;
         }
         kqueue_.setEvent(id, EVFILT_WRITE, EV_DISABLE, 0, 0, NULL);
       } else if (filter == EVFILT_PROC) {
+        
         int ret = waitpid(id, NULL, 0);
         int status = event_list[i].data;
         if ((WIFEXITED(status) && WEXITSTATUS(status) != 0)
             || WIFSIGNALED(status) || ret != id) {
           eraseConnection(ptr, connections, work_queue);
+          break;
         }
+        kqueue_.setEvent(ptr->getPipeReadFd(), EVFILT_READ, EV_ENABLE, 0, 0, NULL);
       }
     }
     for (size_t queue_size = work_queue.size(); queue_size > 0; --queue_size) {
