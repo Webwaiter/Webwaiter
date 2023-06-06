@@ -205,6 +205,10 @@ void Connection::setConfigInfo() {
   const LocationBlock &lb = sb.getLocationBlocks()[0];
   selected_server_ = &sb;
   selected_location_ = &lb;
+  request_message_.setResourcePath(*selected_location_);
+  if (selected_location_->getRedirection() != "") {
+    response_status_code_ = 301;
+  }
 }
 
 static std::string getQueryString(std::string &uri) {

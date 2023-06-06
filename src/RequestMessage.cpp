@@ -343,3 +343,18 @@ std::string RequestMessage::getContentType() const {
 const std::vector<char> &RequestMessage::getBody() const {
   return body_;
 }
+
+const std::string &RequestMessage::getResourcePath() const {
+  return resource_path_;
+}
+
+void RequestMessage::setResourcePath(const LocationBlock &location_block) {
+  std::string ret;
+  const std::string &location_block_url = location_block.getUrl();
+  size_t pos = uri_.find('?');
+  if (pos != std::string::npos) {
+   ret = uri_.substr(0, pos); 
+  }
+  pos = ret.find(location_block_url);
+  resource_path_ = ret.substr(pos + location_block_url.size());
+}
