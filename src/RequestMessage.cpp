@@ -353,7 +353,9 @@ void RequestMessage::setResourcePath(const LocationBlock &location_block) {
   const std::string &location_block_url = location_block.getUrl();
   size_t pos = uri_.find('?');
   if (pos != std::string::npos) {
-   ret = uri_.substr(0, pos); 
+    ret = uri_.substr(0, pos); 
+  } else {
+    ret = uri_;
   }
   pos = ret.find(location_block_url);
   resource_path_ = ret.substr(pos + location_block_url.size());
