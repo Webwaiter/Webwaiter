@@ -52,6 +52,7 @@ class RequestMessage {
   void parseTrailerField();
 
   void parseComplete(int response_status_code);
+  void validation();
   void checkBodyType();
   void parseField(std::string &field);
   void removeChunkedInHeader();

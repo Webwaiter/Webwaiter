@@ -53,6 +53,7 @@ ReturnState RequestMessage::parse(const char *buffer, size_t read) {
   parseChunkBody();
 
   if (state_ == kParseComplete) {
+    validation();
     return SUCCESS;
   }
   return AGAIN;
@@ -116,7 +117,7 @@ void RequestMessage::parseProtocol() {
   protocol_.insert(protocol_.begin(), leftover_.begin(), crlf_pos);
   leftover_.erase(leftover_.begin(), crlf_pos + kCrlfLength);
 
-  if (protocol_ != "HTTP/1.1") {
+  if (!(protocol_ == "HTTP/1.1" || protocol_ == "HTTP/1.0")) {
     parseComplete(400);
     return;
   }
@@ -295,6 +296,29 @@ void RequestMessage::removeChunkedInHeader() {
   value.erase(pos, 7);
 
   headers_["content-length"] = numberToString(content_length_);
+}
+
+void RequestMessage::validation() {
+  if (response_status_code_ != 200) {
+    return;
+  }
+  if (!(method_ == "GET" || method_ == "POST" || method_ == "DELETE")) {
+    response_status_code_ = 501;
+    return;
+  }
+  if (headers_.find("host") == headers_.end()) {
+    response_status_code_ = 400;
+    return;
+  }
+
+  map_iterator connection_pos = headers_.find("connection");
+  if (connection_pos == headers_.end()) {
+    return;
+  }
+  std::string connection = connection_pos->second;
+  if (!(connection == "keep-alive" || connection == "close")) {
+    response_status_code_ = 400;
+  }
 }
 
 const std::string &RequestMessage::getMethod(void) const {
