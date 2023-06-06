@@ -8,6 +8,7 @@
 #include <deque>
 
 #include "src/utils.hpp"
+#include "src/LocationBlock.hpp"
 
 class RequestMessage {
  public:
@@ -23,6 +24,8 @@ class RequestMessage {
   const std::map<std::string, std::string> &getHeaders() const;
   ssize_t getContentLength() const;
   std::string getContentType() const;
+  const std::string &getResourcePath() const;
+  void setResourcePath(const LocationBlock &location_block);
   const std::vector<char> &getBody() const;
   void printRequestMessage();
 
@@ -67,6 +70,7 @@ class RequestMessage {
   std::string method_;
   std::string uri_;
   std::string protocol_;
+  std::string resource_path_;
   std::map<std::string, std::string> headers_;
   std::vector<char> body_;
   int &response_status_code_;
