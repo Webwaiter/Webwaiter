@@ -6,6 +6,7 @@
 #include <fcntl.h>
 
 #include <queue>
+#include <set>
 #include <string>
 
 #include "src/Config.hpp"
@@ -35,11 +36,21 @@ void Connection::parsingRequestMessage() {
   // TODO: 파싱유효성 검사
   setConfigInfo();
   // TODO: allowed method 검사
-  // TODO: GET, POST logic과 DELETE logic 분리
+  if (response_status_code_ == 200) {
+    checkAllowedMethod();
+  }
   // TODO: extension 확인 후 CGI 혹은 static page 처리
   // TODO: directory listing logic 구현
   //handlingStaticPage();
-  executeCgiProcess();
+  // executeCgiProcess();
+}
+
+void Connection::checkAllowedMethod() {
+  const std::string &request_method = request_message_.getMethod();
+  const std::set<std::string> &allowed_method = selected_location_->getAllowedMethod();
+  if (allowed_method.find(request_method) == allowed_method.end()) {
+    response_status_code_ = 405;
+  }
 }
 
 ReturnState Connection::checkPipeReadDone() {
