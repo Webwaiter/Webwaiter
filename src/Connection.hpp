@@ -30,6 +30,7 @@ class Connection {
   bool checkReadSuccess();
   bool isTimeOut();
   void setConfigInfo();
+  void checkAllowedMethod();
   void parsingRequestMessage();
   void handlingStaticPage();
   void handlingDynamicPage();
