@@ -285,7 +285,7 @@ void Connection::executeCgiProcess() {
     // exec
     std::map<std::string, std::string> env;
     char **meta_variables = setMetaVariables(env);
-    char **cgi_argv = setCgiArguments(config_.getCgiPath(), env["SCRIPT_FILENAME"]);
+    char **cgi_argv = setCgiArguments(selected_location_->getCgiPath(), env["SCRIPT_FILENAME"]);
     if (execve(cgi_argv[0], cgi_argv, meta_variables) < 0) {
       is_connection_close_ = true;
     }

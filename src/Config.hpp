@@ -21,7 +21,6 @@ class Config {
   const std::string &getServerProgramName() const;
   const std::string &getHttpVersion() const;
   const std::string &getCgiVersion() const;
-  const std::string &getCgiPath() const;
   const int &getTimeout() const;
   const std::map<std::string, std::string> &getStausMessages() const;
   const std::map<std::string, std::string> &getMimeTypes() const;
@@ -37,7 +36,6 @@ class Config {
   std::string cgi_version_;
   std::string status_path_;
   std::string mime_path_;
-  std::string cgi_path_;
   int timeout_;
   std::map<std::string, std::string> status_messages_;
   std::map<std::string, std::string> mime_types_;
