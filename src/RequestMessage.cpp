@@ -16,14 +16,6 @@ void RequestMessage::appendLeftover(const char *buffer, size_t n) {
   }
 }
 
-bool RequestMessage::writeDone() {
-  if (body_.size() == static_cast<size_t>(written_)) {
-    written_ = 0;
-    return true;
-  }
-  return false;
-}
-
 void RequestMessage::clear() {
   state_ = kMethod;
   written_ = 0;

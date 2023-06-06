@@ -12,9 +12,7 @@
 class RequestMessage {
  public:
   explicit RequestMessage(int &response_status_code_);
-  void appendLeftover(const char *buffer, size_t n);
   ReturnState parse(const char *buffer, size_t read);
-  bool writeDone();
   void clear();
 
   const std::string &getMethod(void) const;
@@ -40,6 +38,7 @@ class RequestMessage {
     kParseComplete
   };
 
+  void appendLeftover(const char *buffer, size_t n);
   void parseStartLine();
   void parseMethod();
   void parseUri();
