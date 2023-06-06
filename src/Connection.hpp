@@ -31,8 +31,9 @@ class Connection {
   bool isTimeOut();
   void setConfigInfo();
   void checkAllowedMethod();
+  std::string createPagePath();
   void parsingRequestMessage();
-  void handlingStaticPage();
+  void handlingStaticPage(const std::string &path);
   void handlingDynamicPage();
   void writingToSocket();
   void executeCgiProcess();

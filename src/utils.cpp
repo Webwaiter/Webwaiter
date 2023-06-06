@@ -77,3 +77,20 @@ std::string changeBinaryToIp(in_addr binary) {
 void toLower(char &c) {
   c = std::tolower(c);
 }
+
+bool deleteFile(const std::string &path) {
+  if (unlink(path.c_str()) == 0) {
+    return true;
+  }
+  return false;
+}
+
+bool isDirectory(const std::string &path) {
+  DIR *dir = opendir(path.c_str());
+  if (dir == NULL) {
+    return false;
+  } else {
+    closedir(dir);
+    return true;
+  }
+}

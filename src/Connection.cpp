@@ -34,14 +34,17 @@ void Connection::parsingRequestMessage() {
   leftover_data_ = -1;
   updateTime(time_);
   // TODO: 파싱유효성 검사
-  setConfigInfo();
+  if (response_status_code_ == 200) {
+    setConfigInfo();
+  }
   // TODO: allowed method 검사
   if (response_status_code_ == 200) {
     checkAllowedMethod();
   }
+  std::string path = createPagePath();
   // TODO: extension 확인 후 CGI 혹은 static page 처리
   // TODO: directory listing logic 구현
-  //handlingStaticPage();
+  handlingStaticPage(path);
   // executeCgiProcess();
 }
 
@@ -51,6 +54,42 @@ void Connection::checkAllowedMethod() {
   if (allowed_method.find(request_method) == allowed_method.end()) {
     response_status_code_ = 405;
   }
+}
+
+std::string Connection::createPagePath() {
+  // status code가  200이 아니라면 default page path를 반환해야 한다.
+  std::string path = "";
+  std::string default_error_page = selected_server_->getDefaultErrorPages().at("400");
+  if (response_status_code_ != 200) {
+    if (response_status_code_ >= 300 & response_status_code_ <= 399) {
+      return path;
+    }
+    return default_error_page;
+  }
+
+  path = selected_location_->getRootDir() + request_message_.getResourcePath();
+
+  if (request_message_.getMethod() == "DELETE") {
+    if (deleteFile(path)) {
+      return path;
+    } else {
+      response_status_code_ = 404;
+      return default_error_page;
+    }
+  }
+  if (isDirectory(path)) {
+    path += "/";
+    path += selected_location_->getIndex();
+    if (access(path.c_str(), R_OK | F_OK) != -1) {
+      return path;
+    } else {
+      // return directoryListing();
+    }
+  } else if (access(path.c_str(), R_OK | F_OK) != -1) {
+    return path;
+  } 
+  response_status_code_ = 404;
+  return default_error_page;
 }
 
 ReturnState Connection::checkPipeReadDone() {
@@ -80,8 +119,7 @@ void Connection::handlingDynamicPage() {
   state_ = kWritingToSocket;
 }
 
-void Connection::handlingStaticPage() {
-  std::string path = selected_location_->getRootDir() + request_message_.getUri();
+void Connection::handlingStaticPage(const std::string &path) {
   response_message_.createBody(path);
   response_message_.createResponseMessage(request_message_, *selected_location_);
   // update write buffer & write buffer size
