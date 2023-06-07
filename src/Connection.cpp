@@ -277,7 +277,7 @@ void Connection::setConfigInfo() {
     }
   }
   if (selected_location_ == nullptr) {
-    selected_location_ = config_.getDefaultLocation();
+    selected_location_ = lbv[0];
   }
   request_message_.setResourcePath(*selected_location_);
   if (selected_location_->getRedirection() != "") {
