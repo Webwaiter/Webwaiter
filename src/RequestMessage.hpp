@@ -51,9 +51,9 @@ class RequestMessage {
   void parseHeaderLine();
   void parseContentLengthBody();
   void parseChunkBody();
-  void parseChunkSize();
-  void parseChunkData();
-  void parseTrailerField();
+  ReturnState parseChunkSize();
+  ReturnState parseChunkData();
+  ReturnState parseTrailerField();
 
   void parseComplete(int response_status_code);
   void validation();
