@@ -276,12 +276,23 @@ void Connection::setConfigInfo() {
       }
     }
   }
-  ssize_t max_match_count = -1;
-  const std::vector<LocationBlock> &lbv = selected_server_->getLocationBlocks();
   const std::string &uri = request_message_.getUri();
+  const std::vector<LocationBlock> &lbv = selected_server_->getLocationBlocks();
+  std::string extension;
+  size_t dot_pos = uri.find('.');
+  if (dot_pos != std::string::npos) {
+    size_t extension_end = uri.find_first_of("/?", dot_pos);
+    std::string extension = extension_end == std::string::npos ?
+      uri.substr(dot_pos + 1) : uri.substr(dot_pos + 1, extension_end - dot_pos - 1);
+  }
   std::vector<std::string> uri_tokens = split(uri, "/");
+  ssize_t max_match_count = -1;
   for (size_t i = 0; i < lbv.size(); ++i) {
     const std::string &location = lbv[i].getUrl();
+    if (location[0] == '#' && extension.size() != 0 && location.substr(1) == extension) {
+      selected_location_ = &lbv[i];
+      return;
+    }
     std::vector<std::string> lb_tokens = split(location, "/");
     ssize_t token_size = std::min(uri_tokens.size(), lb_tokens.size());
     ssize_t match_count = 0;
