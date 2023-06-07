@@ -18,7 +18,6 @@
 class ServerBlock {
  public:
   explicit ServerBlock(std::ifstream &file);
-  const std::map<std::string, std::string> &getDefaultErrorPages(void) const;
   const int &getClientBodySize() const;
   const std::string &getServerIP() const;
   const std::string &getServerPort() const;
@@ -28,7 +27,6 @@ class ServerBlock {
  private:
   void parseServerBlock(std::ifstream &file);
   void checkSemantics() const;
-  std::map<std::string, std::string> default_error_pages_;
   int client_body_size_;
   std::string server_ip_;
   std::string server_port_;

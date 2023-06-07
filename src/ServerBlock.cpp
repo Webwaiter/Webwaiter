@@ -26,20 +26,6 @@ static void checkBracePair(std::vector<std::string> &tmp_vec, std::stack<std::st
     }
   }
 }
-static void checkDefaultErrorPage(std::map<std::string, std::string> default_error_page) {
-  if (access(default_error_page["200"].c_str(), R_OK | F_OK) == -1) {
-    throw FAIL; 
-  }
-  if (access(default_error_page["300"].c_str(), R_OK | F_OK) == -1) {
-    throw FAIL; 
-  }
-  if (access(default_error_page["400"].c_str(), R_OK | F_OK) == -1) {
-    throw FAIL; 
-  }
-  if (access(default_error_page["500"].c_str(), R_OK | F_OK) == -1) {
-    throw FAIL; 
-  }
-}
 
 static void checkClientBodySize(int client_body_size) {
   if (client_body_size <= 0 || client_body_size > 10485760) {
@@ -80,7 +66,6 @@ static void checkServerPort(std::string server_port) {
 }
 
 void ServerBlock::checkSemantics() const {
-  checkDefaultErrorPage(default_error_pages_);
   checkClientBodySize(client_body_size_);
   checkServerIP(server_ip_);
   checkServerPort(server_port_);
@@ -105,39 +90,23 @@ void ServerBlock::parseServerBlock(std::ifstream &file) {
       location_blocks_.push_back(LocationBlock(file, tmp_vec[1]));
       brace.pop();
       error_flag |= (1 << 0);
-    } else if (tmp_vec[0] == "default_error_page_200" && tmp_vec.size() == 2) {
-      default_error_pages_["200"] = tmp_vec[1];
-      error_flag |= (1 << 1);
-    } else if (tmp_vec[0] == "default_error_page_300" && tmp_vec.size() == 2) {
-      default_error_pages_["300"] = tmp_vec[1];
-      error_flag |= (1 << 2);
-    } else if (tmp_vec[0] == "default_error_page_400" && tmp_vec.size() == 2) {
-      default_error_pages_["400"] = tmp_vec[1];
-      error_flag |= (1 << 3);
-    } else if (tmp_vec[0] == "default_error_page_500" && tmp_vec.size() == 2) {
-      default_error_pages_["500"] = tmp_vec[1];
-      error_flag |= (1 << 4);
     } else if (tmp_vec[0] == "client_body_size" && tmp_vec.size() == 2) {
       client_body_size_ = atoi(tmp_vec[1].c_str());
-      error_flag |= (1 << 5);
+      error_flag |= (1 << 1);
     } else if (tmp_vec[0] == "listen" && tmp_vec.size() == 2) {
       server_ip_ = tmp_vec[1];
-      error_flag |= (1 << 6);
+      error_flag |= (1 << 2);
     } else if (tmp_vec[0] == "port" && tmp_vec.size() == 2) {
       server_port_ = tmp_vec[1];
-      error_flag |= (1 << 7);
+      error_flag |= (1 << 3);
     } else if (tmp_vec[0] == "server_name" && tmp_vec.size() == 2) {
       server_name_ = tmp_vec[1];
-      error_flag |=  (1 << 8);
+      error_flag |=  (1 << 4);
     }
   }
-  if (!(error_flag == 255 || error_flag == 511) || !brace.empty()) {
+  if (!(error_flag == 15 || error_flag == 31) || !brace.empty()) {
     throw FAIL;
   }
-}
-
-const std::map<std::string, std::string> &ServerBlock::getDefaultErrorPages(void) const {
-  return default_error_pages_;
 }
 
 const int &ServerBlock::getClientBodySize() const {

@@ -57,12 +57,19 @@ static void checkTimeout(int timeout) {
   }
 }
 
+static void checkDefaultErrorPage(std::string default_error_page) {
+  if (access(default_error_page.c_str(), R_OK | F_OK) == -1) {
+    throw FAIL;
+  }
+}
+
 void Config::checkSemantics() const {
   checkHttpVersion(http_version_);
   checkCgiVersion(cgi_version_);
   checkStatusPath(status_path_);
   checkMimePath(mime_path_);
   checkTimeout(timeout_);
+  checkDefaultErrorPage(default_error_page_);
 }
 
 void Config::parseConfigFile(const char *file_path) {
@@ -115,9 +122,12 @@ void Config::parseConfigFile(const char *file_path) {
     } else if (tmp_vec[0] == "cgi_version" && tmp_vec.size() == 2) {
       cgi_version_ = tmp_vec[1];
       error_flag |= (1 << 6);
+    } else if (tmp_vec[0] == "default_error_page" && tmp_vec.size() == 2) {
+      default_error_page_ = tmp_vec[1];
+      error_flag |= (1 << 7);
     }
   }
-  if (!(error_flag == 127) || !brace.empty()) {
+  if (!(error_flag == 255) || !brace.empty()) {
     throw FAIL;
   }
 }
@@ -184,6 +194,10 @@ const std::vector<ServerBlock> &Config::getServerBlocks() const {
 
 const int &Config::getTimeout() const {
   return timeout_;
+}
+
+const std::string &Config::getDefaultErrorPage() const {
+  return default_error_page_;
 }
 
 const std::map<std::string, std::string> &Config::getStausMessages() const {

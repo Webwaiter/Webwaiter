@@ -22,6 +22,7 @@ class Config {
   const std::string &getHttpVersion() const;
   const std::string &getCgiVersion() const;
   const int &getTimeout() const;
+  const std::string &getDefaultErrorPage() const;
   const std::map<std::string, std::string> &getStausMessages() const;
   const std::map<std::string, std::string> &getMimeTypes() const;
   const std::vector<ServerBlock> &getServerBlocks() const;
@@ -37,6 +38,7 @@ class Config {
   std::string status_path_;
   std::string mime_path_;
   int timeout_;
+  std::string default_error_page_;
   std::map<std::string, std::string> status_messages_;
   std::map<std::string, std::string> mime_types_;
   std::vector<ServerBlock> server_blocks_; 
