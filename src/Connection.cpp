@@ -259,13 +259,13 @@ void Connection::setConfigInfo() {
       }
     }
   }
-  size_t max_match_count = 0;
+  size_t max_match_count = -1;
   const std::vector<LocationBlock> &lbv = selected_server_.getLocationBlocks();
   const std::string &uri = request_message_.getUri();
   std::vector<std::string> uri_tokens = split(uri, "/");
   for (size_t i = 0; i < lbv.size(); ++i) {
-    const string &request_message_url = lbv[i].getUrl();
-    std::vector<std::string> lb_tokens = split(request_message_url, "/");
+    const string &location = lbv[i].getUrl();
+    std::vector<std::string> lb_tokens = split(location, "/");
     size_t token_size = min(uri_tokens.size(), lb_tokens.size());
     size_t match_count = 0;
     while (match_count < token_size && uri_tokens[match_count] == lb_tokens[match_count]) {
@@ -275,9 +275,6 @@ void Connection::setConfigInfo() {
       selected_location_ = &lbv[i];
       max_match_count = match_count;
     }
-  }
-  if (selected_location_ == nullptr) {
-    selected_location_ = lbv[0];
   }
   request_message_.setResourcePath(*selected_location_);
   if (selected_location_->getRedirection() != "") {
