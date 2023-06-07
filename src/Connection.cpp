@@ -45,9 +45,11 @@ void Connection::parsingRequestMessage() {
   }
   std::string path = createPagePath();
   // TODO: extension 확인 후 CGI 혹은 static page 처리
-  // TODO: directory listing logic 구현
-  handlingStaticPage(path);
-  // executeCgiProcess();
+  if (isCgi(path)) {
+    executeCgiProcess(path);
+  } else {
+    handlingStaticPage(path);
+  }
 }
 
 void Connection::checkAllowedMethod() {
@@ -85,6 +87,7 @@ std::string Connection::createPagePath() {
     if (access(path.c_str(), R_OK | F_OK) != -1) {
       return path;
     } else {
+  // TODO: directory listing logic 구현
       // return directoryListing();
     }
   } else if (access(path.c_str(), R_OK | F_OK) != -1) {
@@ -94,8 +97,20 @@ std::string Connection::createPagePath() {
   return default_error_page;
 }
 
+bool Connection::isCgi(const std::string &path) {
+  size_t pos = path.find_last_of('.');
+  if (pos != std::string::npos) {
+    std::string extension = path.substr(pos + 1);
+    if (extension == selected_location_->getCgiExtension()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 ReturnState Connection::checkPipeReadDone() {
   if (leftover_data_ == 0) {
+    //TODO: pipe close timing change
     close(pipe_write_fd_);
     close(pipe_read_fd_);
     pipe_read_fd_ = -1;
@@ -287,12 +302,17 @@ static std::string getQueryString(std::string &uri) {
   return query_pos == std::string::npos ? "" : uri.substr(query_pos + 1);
 }
 
-static std::string getScriptName(const std::string &uri, const std::string &extention) {
-  size_t dot_pos = uri.find("." + extention);
-  return uri.substr(0, dot_pos + extention.size() + 1);
+// static std::string getScriptName(const std::string &uri, const std::string &extention) {
+//   size_t dot_pos = uri.find("." + extention);
+//   return uri.substr(0, dot_pos + extention.size() + 1);
+// }
+
+static std::string getScriptName(const std::string &path, const LocationBlock &location_block) {
+  std::string root = location_block.getRootDir();  
+  return path.substr(root.length() + 1);
 }
 
-char **Connection::setMetaVariables(std::map<std::string, std::string> &env) {
+char **Connection::setMetaVariables(std::map<std::string, std::string> &env, const std::string &path) {
   env["AUTH_TYPE"] = "";
   env["REQUEST_URI"] = request_message_.getUri();
   env["QUERY_STRING"] = getQueryString(env["REQUEST_URI"]);
@@ -310,8 +330,10 @@ char **Connection::setMetaVariables(std::map<std::string, std::string> &env) {
   env["REMOTE_IDENT"] = "";
   env["REMOTE_USER"] = "";
   env["REMOTE_HOST"] = env["REMOTE_ADDR"];
-  env["SCRIPT_NAME"] = getScriptName(env["REQUEST_URI"], selected_location_->getCgiExtension());
-  env["SCRIPT_FILENAME"] = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
+  // env["SCRIPT_NAME"] = getScriptName(env["REQUEST_URI"], selected_location_->getCgiExtension());
+  // env["SCRIPT_FILENAME"] = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
+  env["SCRIPT_NAME"] = getScriptName(path, *selected_location_);
+  env["SCRIPT_FILENAME"] = path;
   env["PATH_INFO"] = env["SCRIPT_FILENAME"];
   env["PATH_TRANSLATED"] = env["PATH_INFO"];
   int n = env.size();
@@ -338,7 +360,7 @@ static char **setCgiArguments(const std::string &cgi_path, std::string &script_f
   return argv;
 }
 
-void Connection::executeCgiProcess() {
+void Connection::executeCgiProcess(const std::string &path) {
   int to_cgi[2];
   int from_cgi[2];
   if (pipe(to_cgi) < 0 || pipe(from_cgi) < 0) {
@@ -370,7 +392,7 @@ void Connection::executeCgiProcess() {
 
     // exec
     std::map<std::string, std::string> env;
-    char **meta_variables = setMetaVariables(env);
+    char **meta_variables = setMetaVariables(env, path);
     char **cgi_argv = setCgiArguments(selected_location_->getCgiPath(), env["SCRIPT_FILENAME"]);
     if (execve(cgi_argv[0], cgi_argv, meta_variables) < 0) {
       is_connection_close_ = true;

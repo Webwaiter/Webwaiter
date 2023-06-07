@@ -29,6 +29,7 @@ class Connection {
   ReturnState work();
   bool checkReadSuccess();
   bool isTimeOut();
+  bool isCgi(const std::string &path);
   void setConfigInfo();
   void checkAllowedMethod();
   std::string createPagePath();
@@ -36,7 +37,7 @@ class Connection {
   void handlingStaticPage(const std::string &path);
   void handlingDynamicPage();
   void writingToSocket();
-  void executeCgiProcess();
+  void executeCgiProcess(const std::string &path);
   void openStaticPage();
   void writingToPipe();
   ReturnState writeHandler(const struct kevent &event);
@@ -53,7 +54,7 @@ class Connection {
   };
 
   ReturnState checkPipeReadDone();
-  char **setMetaVariables(std::map<std::string, std::string> &env);
+  char **setMetaVariables(std::map<std::string, std::string> &env, const std::string &path);
 
   int connection_socket_;
   int pipe_read_fd_;
