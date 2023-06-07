@@ -8,13 +8,12 @@
 #include <deque>
 
 #include "src/utils.hpp"
+#include "src/LocationBlock.hpp"
 
 class RequestMessage {
  public:
   explicit RequestMessage(int &response_status_code_);
-  void appendLeftover(const char *buffer, size_t n);
   ReturnState parse(const char *buffer, size_t read);
-  bool writeDone();
   void clear();
 
   const std::string &getMethod(void) const;
@@ -23,7 +22,10 @@ class RequestMessage {
   const std::map<std::string, std::string> &getHeaders() const;
   ssize_t getContentLength() const;
   std::string getContentType() const;
+  const std::string &getResourcePath() const;
+  void setResourcePath(const LocationBlock &location_block);
   const std::vector<char> &getBody() const;
+  void printRequestMessage();
 
  private:
   enum ParseState {
@@ -39,6 +41,7 @@ class RequestMessage {
     kParseComplete
   };
 
+  void appendLeftover(const char *buffer, size_t n);
   void parseStartLine();
   void parseMethod();
   void parseUri();
@@ -52,6 +55,7 @@ class RequestMessage {
   void parseTrailerField();
 
   void parseComplete(int response_status_code);
+  void validation();
   void checkBodyType();
   void parseField(std::string &field);
   void removeChunkedInHeader();
@@ -66,6 +70,7 @@ class RequestMessage {
   std::string method_;
   std::string uri_;
   std::string protocol_;
+  std::string resource_path_;
   std::map<std::string, std::string> headers_;
   std::vector<char> body_;
   int &response_status_code_;

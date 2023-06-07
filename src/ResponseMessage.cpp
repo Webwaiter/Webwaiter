@@ -6,14 +6,95 @@
 
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 #include "src/RequestMessage.hpp"
 #include "src/utils.hpp"
 
+typedef std::deque<char>::iterator deque_iterator;
+
 ResponseMessage::ResponseMessage(int &response_status_code, const Config& config, Kqueue& kqueue) : response_status_code_(response_status_code), config_(config), kqueue_(kqueue) {}
 void ResponseMessage::appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read) {
   for (ssize_t i = 0; i < read; ++i) {
-    body_.push_back(read_buffer[i]);
+    leftover_.push_back(read_buffer[i]);
+  }
+}
+
+void ResponseMessage::parseCgiBody() {
+  body_.insert(body_.end(), leftover_.begin(), leftover_.end());
+}
+
+void ResponseMessage::parseCgiHeader(const ServerBlock &server_block) {
+ // headers_에 적절한 header field와 value를 파싱해서 넣는 함수
+  deque_iterator line_pos;
+  while (true) {
+    line_pos = std::search(leftover_.begin(), leftover_.end(), kNl, kNl + kNlLength);
+    if (line_pos == leftover_.end()) {
+      return;
+    }
+
+    std::string field_line(leftover_.begin(), line_pos);
+    leftover_.erase(leftover_.begin(), line_pos + kNlLength);
+    if (field_line.empty()) {
+      return;
+    }
+    parseField(field_line);
+  }
+  if (headers_.find("status") != headers_.end()) {
+    response_status_code_ = std::atoi(headers_.at("status").c_str());
+  }
+  if (headers_.find("loaction") != headers_.end()) {
+    response_status_code_ = 302;
+    std::string uri = headers_.at("location");
+    if (uri[0] == '/') {
+      std::string absolute_uri("http://");
+      std::string server_ip = server_block.getServerIP();
+      std::string server_port = server_block.getServerPort();
+      appendData(absolute_uri, server_ip); 
+      absolute_uri.push_back(':');
+      appendData(absolute_uri, server_port); 
+      appendData(absolute_uri, uri);
+      headers_["location"] = absolute_uri;
+    }
+  }
+}
+
+void ResponseMessage::parseField(std::string &field) {
+  size_t colon_pos = field.find(':');
+  if (colon_pos == std::string::npos) {
+    return;
+  }
+
+  std::string field_name(field.begin(), field.begin() + colon_pos);
+  if (field_name.find(' ') != std::string::npos) {
+    response_status_code_ = 400;
+    return;
+  }
+
+  std::string field_value(field.begin() + colon_pos + 1, field.end());
+  if (field_value.find('\0') != std::string::npos) {
+    response_status_code_ = 400;
+    return;
+  }
+
+  std::for_each(field_name.begin(), field_name.end(), toLower);
+  trim(field_value);
+  headers_[field_name] = field_value;
+}
+
+void ResponseMessage::parseCgiOutput(const ServerBlock &server_block) {
+  // 각 헤더 라인의 끝에는 newline으로 구분된다
+  // 헤더 필드와 본문은 newline한줄로 구분된다
+  // 즉, 연속되는 newline 2개가 있으면 본문이 있는 것이다
+  parseCgiHeader(server_block);
+  parseCgiBody();
+  // body_size check
+  // open default error page & copy to body_ 
+  if (body_.size() == 0) {
+    //TODO: change defaultErrorPage to config
+    createBody(server_block
+                .getDefaultErrorPages()
+                .at(numberToString(response_status_code_)));  
   }
 }
 
@@ -59,7 +140,7 @@ void ResponseMessage::setLastModified(const RequestMessage &request_message, con
   if (stat(path.c_str(), &tmp) == -1) {
     return;
   }
-  headers_["Last-Modified"] = getHTTPDate(&tmp.st_mtime);
+  headers_["last-modified"] = getHTTPDate(&tmp.st_mtime);
 }
 
 void ResponseMessage::setAllowed(const LocationBlock &location) {
@@ -72,7 +153,7 @@ void ResponseMessage::setAllowed(const LocationBlock &location) {
     allowed += ", ";
    }
   }
-  headers_["Allowed"] = allowed;
+  headers_["allowed"] = allowed;
 }
 
 void ResponseMessage::createHeaderLine(const RequestMessage &request_message, const LocationBlock &location) {
@@ -81,26 +162,31 @@ void ResponseMessage::createHeaderLine(const RequestMessage &request_message, co
   // If-Modified-Since
   const std::map<std::string, std::string> &request_headers = request_message.getHeaders();
   
-  headers_["Server"] = config_.getServerProgramName();
-  headers_["Date"] = getHTTPDate(NULL);
+  headers_["server"] = config_.getServerProgramName();
+  headers_["date"] = getHTTPDate(NULL);
   if (request_headers.find("connection") != request_headers.end()) {
-    headers_["Connection"] = request_headers.at("connection");
+    headers_["connection"] = request_headers.at("connection");
   } else {
-    headers_["Connection"] = "keep-alive"; 
+    headers_["connection"] = "keep-alive"; 
   }
   if (request_headers.find("if-modified-since") != request_headers.end()) {
     setLastModified(request_message, location);
   }
+  // TODO: location block에 redirection 문구가 있으면 status code를 301로 변경하는 로직이
+  //       어딘가 있어야됨
   if (response_status_code_ == 301) {
-    headers_["Location"] = location.getRedirection();
+    headers_["location"] = location.getRedirection();
   }
   if (response_status_code_ == 405) {
     setAllowed(location);
   }
-  
-  headers_["Content-Length"] = numberToString(body_.size());
-  //TODO: Add logic to find MIME type
-  headers_["Content-Type"] = "text/html";
+   
+  if (body_.size() != 0) {
+    headers_["content-length"] = numberToString(body_.size());
+    //TODO: Add logic to find MIME type
+    if (headers_.find("content-type") == headers_.end())
+      headers_["content-type"] = "text/html";
+  }
 
   for (std::map<std::string, std::string>::iterator it = headers_.begin(); it != headers_.end(); ++it) {
     std::string field = it->first + ": " + it->second;
@@ -116,6 +202,15 @@ void ResponseMessage::createResponseMessage(const RequestMessage& request_messag
   response_message_.insert(response_message_.end(), status_line_.begin(), status_line_.end());
   response_message_.insert(response_message_.end(), header_line_.begin(), header_line_.end());
   response_message_.insert(response_message_.end(), body_.begin(), body_.end());
+}
+
+void ResponseMessage::clear() {
+  headers_.clear();
+  leftover_.clear();
+  status_line_.clear();
+  header_line_.clear();
+  body_.clear();
+  response_message_.clear();
 }
 
 const std::vector<char> &ResponseMessage::getStatusLine() const {

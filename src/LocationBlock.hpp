@@ -20,6 +20,7 @@ class LocationBlock {
   const std::set<std::string> &getAllowedMethod() const;
   const std::string &getDirectoryListing() const;
   const std::string &getIndex() const;
+  const std::string &getCgiPath() const;
   const std::string &getCgiExtension() const;
   const std::string &getRedirection() const;
 
@@ -31,6 +32,7 @@ class LocationBlock {
   std::set<std::string> allowed_method_;
   std::string directory_listing_;
   std::string index_;
+  std::string cgi_path_;
   std::string cgi_extension_;
   std::string redirection_;
 };

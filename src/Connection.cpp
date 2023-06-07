@@ -5,8 +5,10 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <queue>
+#include <set>
 #include <string>
 
 #include "src/Config.hpp"
@@ -15,43 +17,111 @@
 #include "src/utils.hpp"
 
 Connection::Connection(int connection_socket, Kqueue& kqueue, const Config& config)
-    : connection_socket_(connection_socket), file_fd_(-1), pipe_read_fd_(-1), pipe_write_fd_(-1),
-      response_status_code_(200), kqueue_(kqueue), config_(config), read_(0), read_cnt_(0), leftover_data_(0),
+    : connection_socket_(connection_socket), pipe_read_fd_(-1), pipe_write_fd_(-1),
+      response_status_code_(200), kqueue_(kqueue), config_(config), read_(0), read_cnt_(0), leftover_data_(-1),
       write_buffer_(NULL), written_(0), write_buffer_size_(0), request_message_(response_status_code_),
-      response_message_(response_status_code_, config_, kqueue_), selected_server_(NULL), selected_location_(NULL), time_(time(NULL)) {}
+      response_message_(response_status_code_, config_, kqueue_), selected_server_(NULL), selected_location_(NULL), time_(time(NULL)),
+      is_connection_close_(false) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
 }
 
 void Connection::parsingRequestMessage() {
-  ReturnState ret = request_message_.parse(read_buffer_, read_);
-  if (ret == AGAIN) {
+  if (request_message_.parse(read_buffer_, read_) == AGAIN) {
+    kqueue_.setEvent(connection_socket_, EVFILT_READ, EV_ENABLE, 0, 0, this);
     return;
   }
+  read_ = 0;
+  leftover_data_ = -1;
+  updateTime(time_);
   // TODO: 파싱유효성 검사
-  setConfigInfo();
+  if (response_status_code_ == 200) {
+    setConfigInfo();
+  }
   // TODO: allowed method 검사
-  // TODO: GET, POST logic과 DELETE logic 분리
+  if (response_status_code_ == 200) {
+    checkAllowedMethod();
+  }
+  std::string path = createPagePath();
   // TODO: extension 확인 후 CGI 혹은 static page 처리
   // TODO: directory listing logic 구현
-  state_ = HANDLING_STATIC_PAGE;
+  handlingStaticPage(path);
+  // executeCgiProcess();
 }
 
-// ReturnState Connection::checkFileReadDone() {
-//   if (leftover_data_ <= sizeof(read_buffer_)) 
-//     if (read_ == leftover_data_) {
-//       // 다 읽은 상태
-//       close(file_fd_);
-//       return SUCCESS;
-//   }
-//   // 다 못읽은 상태
-//   kqueue_.setEvent(file_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
-//   return AGAIN;
-// }
+void Connection::checkAllowedMethod() {
+  const std::string &request_method = request_message_.getMethod();
+  const std::set<std::string> &allowed_method = selected_location_->getAllowedMethod();
+  if (allowed_method.find(request_method) == allowed_method.end()) {
+    response_status_code_ = 405;
+  }
+}
 
-ReturnState Connection::handlingStaticPage() {
-  std::string path = selected_location_->getRootDir() + request_message_.getUri();
+std::string Connection::createPagePath() {
+  // status code가  200이 아니라면 default page path를 반환해야 한다.
+  std::string path = "";
+  std::string default_error_page = selected_server_->getDefaultErrorPages().at("400");
+  if (response_status_code_ != 200) {
+    if (response_status_code_ >= 300 & response_status_code_ <= 399) {
+      return path;
+    }
+    return default_error_page;
+  }
+
+  path = selected_location_->getRootDir() + request_message_.getResourcePath();
+
+  if (request_message_.getMethod() == "DELETE") {
+    if (deleteFile(path)) {
+      return path;
+    } else {
+      response_status_code_ = 404;
+      return default_error_page;
+    }
+  }
+  if (isDirectory(path)) {
+    path += "/";
+    path += selected_location_->getIndex();
+    if (access(path.c_str(), R_OK | F_OK) != -1) {
+      return path;
+    } else {
+      // return directoryListing();
+    }
+  } else if (access(path.c_str(), R_OK | F_OK) != -1) {
+    return path;
+  } 
+  response_status_code_ = 404;
+  return default_error_page;
+}
+
+ReturnState Connection::checkPipeReadDone() {
+  if (leftover_data_ == 0) {
+    close(pipe_write_fd_);
+    close(pipe_read_fd_);
+    pipe_read_fd_ = -1;
+    pipe_write_fd_ = -1;
+    return SUCCESS;
+  }
+  response_message_.appendReadBufferToLeftoverBuffer(read_buffer_, read_);
+  read_= 0;
+  // 다 못읽은 상태
+  return AGAIN;
+}
+
+void Connection::handlingDynamicPage() {
+  if (checkPipeReadDone() == AGAIN) {
+    kqueue_.setEvent(pipe_read_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
+    return;
+  }
+  response_message_.parseCgiOutput(*selected_server_);
+  response_message_.createResponseMessage(request_message_, *selected_location_);
+  write_buffer_ = response_message_.getResponseMessage().data();
+  write_buffer_size_ = response_message_.getResponseMessage().size();
+  kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
+  state_ = kWritingToSocket;
+}
+
+void Connection::handlingStaticPage(const std::string &path) {
   response_message_.createBody(path);
   response_message_.createResponseMessage(request_message_, *selected_location_);
   // update write buffer & write buffer size
@@ -59,37 +129,45 @@ ReturnState Connection::handlingStaticPage() {
   write_buffer_size_ = response_message_.getResponseMessage().size();
   // write event enable & update state
   kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
-  state_ = WRITING_STATIC_PAGE;
-  return SUCCESS;
+  state_ = kWritingToSocket;
 }
 
-void Connection::writingToPipe() {
-  if (request_message_.writeDone()) {
-    state_ = HANDLING_DYNAMIC_PAGE_HEADER;
+bool Connection::isTimeOut() {
+  if (state_ == kReadingFromSocket && read_ == 0) {
+     if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
+      return true;
+    }
+  } else {
+     if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
+      return true;
+     }
   }
+  return false;
 }
 
-ReturnState Connection::work(void) {
-  //   if (checkTimeOut()){
-  //     // connectionClose();
-  //     return CONNECTION_CLOSE;
-  //   }
+ReturnState Connection::work() {
+  if (isTimeOut()){
+    return CONNECTION_CLOSE;
+  }
   switch (state_) {
-    case PARSING_REQUEST_MESSAGE:parsingRequestMessage();
+    case kReadingFromSocket:
+      parsingRequestMessage();
       break;
-    case HANDLING_STATIC_PAGE:handlingStaticPage();
+    case kWritingToPipe:
+      writingToPipe();
+      updateTime(time_);
       break;
-    case HANDLING_DYNAMIC_PAGE_HEADER:break;
-    case HANDLING_DYNAMIC_PAGE_BODY:break;
-    case WRITING_TO_PIPE:writingToPipe();
+    case kReadingFromPipe:
+      handlingDynamicPage();
+      updateTime(time_);
       break;
-    case WRITING_STATIC_PAGE:
-      if (writingStaticPage() == CONNECTION_CLOSE) {
-        return CONNECTION_CLOSE;
-      }
+    case kWritingToSocket:
+      writingToSocket();
+      updateTime(time_);
       break;
-    case WRITING_DYNAMIC_PAGE_HEADER:break;
-    case WRITING_DYNAMIC_PAGE_BODY:break;
+  }
+  if (is_connection_close_) {
+    return CONNECTION_CLOSE;
   }
   return SUCCESS;
 }
@@ -132,9 +210,6 @@ char *Connection::getReadBuffer() {
 
 void Connection::closeConnection() {
   close(connection_socket_);
-  if (file_fd_ != -1) {
-    close(file_fd_);
-  }
   if (pipe_read_fd_ != -1) {
     close(pipe_read_fd_);
   }
@@ -143,20 +218,26 @@ void Connection::closeConnection() {
   }
 }
 
-ReturnState Connection::writingStaticPage() {
+void Connection::writingToPipe() {
+  if (static_cast<size_t>(written_) < write_buffer_size_) {
+    kqueue_.setEvent(pipe_write_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
+    return;
+  }
+  state_ = kReadingFromPipe;
+}
+
+void Connection::writingToSocket() {
   if (static_cast<size_t>(written_) < write_buffer_size_) {
     kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
-    return AGAIN;
+    return;
   }
-  written_ = 0;
-  write_buffer_ = NULL;
-  write_buffer_size_ = 0;
   const std::map<std::string, std::string> &response_headers = response_message_.getHeaders();
-  if (response_headers.at("Connection") == "close") {
-    return CONNECTION_CLOSE;
+  if (response_headers.at("connection") == "close") {
+    is_connection_close_ = true;
   }
-  state_ = PARSING_REQUEST_MESSAGE;
-  return SUCCESS;
+  clear();
+  state_ = kReadingFromSocket;
+  kqueue_.setEvent(connection_socket_, EVFILT_READ, EV_ENABLE, 0, 0, this);
 }
 
 void Connection::setConfigInfo() {
@@ -178,17 +259,29 @@ void Connection::setConfigInfo() {
       }
     }
   }
-  const std::string &uri = request_message_.getUri();
   size_t max_match_count = 0;
   const std::vector<LocationBlock> &lbv = selected_server_.getLocationBlocks();
+  const std::string &uri = request_message_.getUri();
+  std::vector<std::string> uri_tokens = split(uri, "/");
   for (size_t i = 0; i < lbv.size(); ++i) {
     const string &request_message_url = lbv[i].getUrl();
-    size_t pos = uri.find(request_message_url);
-    size_t location_size = request_message_url.size();
-    if (pos == 0 && location_size > max_match_count) {
-      selected_location_ = &lbv[i];
-      max_match_count = location_size;;
+    std::vector<std::string> lb_tokens = split(request_message_url, "/");
+    size_t token_size = min(uri_tokens.size(), lb_tokens.size());
+    size_t match_count = 0;
+    while (match_count < token_size && uri_tokens[match_count] == lb_tokens[match_count]) {
+      ++match_count;
     }
+    if (match_count > max_match_count) {
+      selected_location_ = &lbv[i];
+      max_match_count = match_count;
+    }
+  }
+  if (selected_location_ == nullptr) {
+    selected_location_ = config_.getDefaultLocation();
+  }
+  request_message_.setResourcePath(*selected_location_);
+  if (selected_location_->getRedirection() != "") {
+    response_status_code_ = 301;
   }
 }
 
@@ -248,15 +341,15 @@ static char **setCgiArguments(const std::string &cgi_path, std::string &script_f
   return argv;
 }
 
-ReturnState Connection::executeCgiProcess() {
+void Connection::executeCgiProcess() {
   int to_cgi[2];
   int from_cgi[2];
   if (pipe(to_cgi) < 0 || pipe(from_cgi) < 0) {
-    return FAIL;
+    is_connection_close_ = true;
   }
   pid_t pid = fork();
   if (pid < 0) {
-    return FAIL;
+    is_connection_close_ = true;
   }
 
   // child process (CGI)
@@ -264,13 +357,13 @@ ReturnState Connection::executeCgiProcess() {
     // plumbing
     if (to_cgi[0] != STDIN_FILENO) {
       if (dup2(to_cgi[0], STDIN_FILENO) != STDIN_FILENO) {
-        return FAIL;
+        is_connection_close_ = true;
       }
       close(to_cgi[0]);
     }
     if (from_cgi[1] != STDOUT_FILENO) {
       if (dup2(from_cgi[1], STDOUT_FILENO) != STDOUT_FILENO) {
-        return FAIL;
+        is_connection_close_ = true;
       }
       close(from_cgi[1]);
     }
@@ -281,24 +374,49 @@ ReturnState Connection::executeCgiProcess() {
     // exec
     std::map<std::string, std::string> env;
     char **meta_variables = setMetaVariables(env);
-    char **cgi_argv = setCgiArguments(config_.getCgiPath(), env["SCRIPT_FILENAME"]);
+    char **cgi_argv = setCgiArguments(selected_location_->getCgiPath(), env["SCRIPT_FILENAME"]);
     if (execve(cgi_argv[0], cgi_argv, meta_variables) < 0) {
-      return FAIL;
+      is_connection_close_ = true;
     }
   }
 
   // parent process (server)
-  close(to_cgi[0]);
   close(from_cgi[1]);
-  kqueue_.setEvent(pid, EVFILT_PROC, EV_ADD, NOTE_EXIT | NOTE_EXITSTATUS, 0, this);
-  kqueue_.setEvent(from_cgi[0], EVFILT_READ, EV_ADD | EV_DISABLE, 0, 0, this);
-  if (request_message_.getMethod() == "POST") {
-    kqueue_.setEvent(to_cgi[1], EVFILT_WRITE, EV_ADD, 0, 0, this);
-    state_ = WRITING_TO_PIPE;
-  } else {
-    close(to_cgi[1]);
-    kqueue_.setEvent(from_cgi[0], EVFILT_READ, EV_ENABLE, 0, 0, this);
-    state_ = HANDLING_DYNAMIC_PAGE_HEADER;
+  close(to_cgi[0]);
+  if (fcntl(from_cgi[0], F_SETFL, O_NONBLOCK) == -1) {
+    is_connection_close_ = true;
   }
-  return SUCCESS;
+  if (fcntl(to_cgi[1], F_SETFL, O_NONBLOCK) == -1) {
+    is_connection_close_ = true;
+  }
+  pipe_read_fd_ = from_cgi[0];
+  pipe_write_fd_ = to_cgi[1];
+  kqueue_.setEvent(pid, EVFILT_PROC, EV_ADD, NOTE_EXIT | NOTE_EXITSTATUS, 0, this);
+  kqueue_.setEvent(pipe_read_fd_, EVFILT_READ, EV_ADD | EV_DISABLE, 0, 0, this);
+  if (request_message_.getMethod() == "POST") {
+    kqueue_.setEvent(pipe_write_fd_, EVFILT_WRITE, EV_ADD, 0, 0, this);
+    write_buffer_ = request_message_.getBody().data();
+    write_buffer_size_ = request_message_.getBody().size();
+    state_ = kWritingToPipe;
+  } else {
+    close(pipe_write_fd_);
+    pipe_write_fd_ = -1;
+    state_ = kReadingFromPipe;
+  }
+}
+
+void Connection::clear() {
+  response_status_code_ = 200;
+  read_ = 0;
+  read_cnt_ = 0;
+  leftover_data_ = 0;
+  written_ = 0;
+  write_buffer_ = NULL;
+  write_buffer_size_ = 0;
+  request_message_.clear();
+  response_message_.clear();
+}
+
+int Connection::getPipeReadFd() const {
+  return pipe_read_fd_;
 }

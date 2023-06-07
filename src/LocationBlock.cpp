@@ -4,7 +4,7 @@
 
 #include "src/utils.hpp"
 
-LocationBlock::LocationBlock(std::ifstream &file, std::string url) :url_(url) {
+LocationBlock::LocationBlock(std::ifstream &file, std::string url) : url_(url) {
   try {
     parseLocationBlock(file);
     checkSemantics();
@@ -56,18 +56,24 @@ static void checkDirectoryListing(const std::string &directory_listting) {
   }
 }
 
+static void checkCgiPath(const std::string &cgi_path) {
+  if (access(cgi_path.c_str(), X_OK | F_OK) == -1) {
+    throw FAIL;
+  }
+}
+
 static void checkCGIExtention(const std::string &cgi_extention) {
   if (!(cgi_extention == "php" || cgi_extention == "py" || cgi_extention == "bla")) {
     throw FAIL;
   }
 }
 
-
 void LocationBlock::checkSemantics() const {
   checkURL(url_);
   checkRootDir(root_dir_);
   checkAllowedMethod(allowed_method_);
   checkDirectoryListing(directory_listing_);
+  checkCgiPath(cgi_path_);
   checkCGIExtention(cgi_extension_);
 }
 
@@ -100,12 +106,15 @@ void LocationBlock::parseLocationBlock(std::ifstream &file) {
     } else if (tmp_vec[0] == "cgi_extension" && tmp_vec.size() == 2) {
       cgi_extension_ = tmp_vec[1];
       error_flag |= (1 << 4);
+    } else if (tmp_vec[0] == "cgi_path" && tmp_vec.size() == 2) {
+      cgi_path_ = tmp_vec[1];
+      error_flag |= (1 << 5);
     } else if (tmp_vec[0] == "redirection" && tmp_vec.size() == 2) {
       redirection_ = tmp_vec[1];
-      error_flag |=  (1 << 5);
+      error_flag |=  (1 << 6);
     }
   }
-  if (!(error_flag == 31 || error_flag == 63) || !brace.empty()) {
+  if (!(error_flag == 63 || error_flag == 127) || !brace.empty()) {
     throw FAIL;	
   }
 }
@@ -128,6 +137,10 @@ const std::string &LocationBlock::getDirectoryListing() const {
 
 const std::string &LocationBlock::getIndex() const {
   return index_;
+}
+
+const std::string &LocationBlock::getCgiPath() const {
+  return cgi_path_;
 }
 
 const std::string &LocationBlock::getCgiExtension() const {

@@ -4,6 +4,8 @@
 #define SRC_UTILS_HPP_
 
 #include <netinet/in.h>
+#include <unistd.h>
+#include <dirent.h>
 
 #include <sstream>
 #include <string>
@@ -11,7 +13,9 @@
 #include <ctime>
 
 static const char kCrlf[] = {'\r', '\n'};
+static const char kNl[] = {'\n'};
 static const size_t kCrlfLength = 2;
+static const size_t kNlLength = 1;
 
 enum ReturnState {
   SUCCESS,
@@ -29,7 +33,9 @@ double getTimeOut(time_t &base_time);
 
 in_addr changeIpToBinary(std::string ip);
 std::string changeBinaryToIp(in_addr binary);
-
+void toLower(char &c);
+bool deleteFile(const std::string &path);
+bool isDirectory(const std::string &path);
 template <typename T>
 std::string numberToString(T number) {
   std::stringstream ss;

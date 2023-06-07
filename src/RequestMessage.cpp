@@ -2,12 +2,10 @@
 
 #include "src/RequestMessage.hpp"
 
+#include <iostream>
+
 typedef std::deque<char>::iterator deque_iterator;
 typedef std::map<std::string, std::string>::iterator map_iterator;
-
-static void toLower(char &c) {
-  c = std::tolower(c);
-}
 
 RequestMessage::RequestMessage(int &response_status_code_)
     : state_(kMethod), content_length_(0), chunk_size_(0), response_status_code_(response_status_code_) {}
@@ -16,14 +14,6 @@ void RequestMessage::appendLeftover(const char *buffer, size_t n) {
   for (size_t i = 0; i < n; ++i) {
     leftover_.push_back(buffer[i]);
   }
-}
-
-bool RequestMessage::writeDone() {
-  if (body_.size() == static_cast<size_t>(written_)) {
-    written_ = 0;
-    return true;
-  }
-  return false;
 }
 
 void RequestMessage::clear() {
@@ -36,7 +26,6 @@ void RequestMessage::clear() {
   protocol_.clear();
   headers_.clear();
   body_.clear();
-  response_status_code_ = 200;
 }
 
 void RequestMessage::parseComplete(int response_status_code) {
@@ -64,9 +53,24 @@ ReturnState RequestMessage::parse(const char *buffer, size_t read) {
   parseChunkBody();
 
   if (state_ == kParseComplete) {
+    validation();
     return SUCCESS;
   }
   return AGAIN;
+}
+
+void RequestMessage::printRequestMessage() {
+  std::cout << method_ << "\n";
+  std::cout << uri_ << "\n";
+  std::cout << protocol_ << "\n";
+  for (map_iterator i = headers_.begin(); headers_.end() != i; ++i) {
+    std::cout << "[" << i->first << "][" << i->second << "]\n";
+  }
+  for (size_t i = 0; i < body_.size(); ++i) {
+    std::cout << body_[i];
+  }
+  std::cout << std::endl;
+
 }
 
 void RequestMessage::parseStartLine() {
@@ -113,7 +117,7 @@ void RequestMessage::parseProtocol() {
   protocol_.insert(protocol_.begin(), leftover_.begin(), crlf_pos);
   leftover_.erase(leftover_.begin(), crlf_pos + kCrlfLength);
 
-  if (protocol_ != "HTTP/1.1") {
+  if (!(protocol_ == "HTTP/1.1" || protocol_ == "HTTP/1.0")) {
     parseComplete(400);
     return;
   }
@@ -294,6 +298,29 @@ void RequestMessage::removeChunkedInHeader() {
   headers_["content-length"] = numberToString(content_length_);
 }
 
+void RequestMessage::validation() {
+  if (response_status_code_ != 200) {
+    return;
+  }
+  if (!(method_ == "GET" || method_ == "POST" || method_ == "DELETE")) {
+    response_status_code_ = 501;
+    return;
+  }
+  if (headers_.find("host") == headers_.end()) {
+    response_status_code_ = 400;
+    return;
+  }
+
+  map_iterator connection_pos = headers_.find("connection");
+  if (connection_pos == headers_.end()) {
+    return;
+  }
+  std::string connection = connection_pos->second;
+  if (!(connection == "keep-alive" || connection == "close")) {
+    response_status_code_ = 400;
+  }
+}
+
 const std::string &RequestMessage::getMethod(void) const {
   return method_;
 }
@@ -311,8 +338,25 @@ ssize_t RequestMessage::getContentLength() const {
 }
 
 std::string RequestMessage::getContentType() const {
-  return headers_.count("Content-Type") ? headers_.at("Content-Type") : "";
+  return headers_.count("content-type") ? headers_.at("content-type") : "";
 }
 const std::vector<char> &RequestMessage::getBody() const {
   return body_;
+}
+
+const std::string &RequestMessage::getResourcePath() const {
+  return resource_path_;
+}
+
+void RequestMessage::setResourcePath(const LocationBlock &location_block) {
+  std::string ret;
+  const std::string &location_block_url = location_block.getUrl();
+  size_t pos = uri_.find('?');
+  if (pos != std::string::npos) {
+    ret = uri_.substr(0, pos); 
+  } else {
+    ret = uri_;
+  }
+  pos = ret.find(location_block_url);
+  resource_path_ = ret.substr(pos + location_block_url.size());
 }
