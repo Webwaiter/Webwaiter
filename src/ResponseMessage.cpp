@@ -92,9 +92,7 @@ void ResponseMessage::parseCgiOutput(const ServerBlock &server_block) {
   // open default error page & copy to body_ 
   if (body_.size() == 0) {
     //TODO: change defaultErrorPage to config
-    createBody(server_block
-                .getDefaultErrorPages()
-                .at(numberToString(response_status_code_)));  
+    createBody(config_.getDefaultErrorPage());  
   }
 }
 

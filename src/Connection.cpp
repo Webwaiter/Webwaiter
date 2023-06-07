@@ -64,7 +64,7 @@ void Connection::checkAllowedMethod() {
 std::string Connection::createPagePath() {
   // status code가  200이 아니라면 default page path를 반환해야 한다.
   std::string path = "";
-  std::string default_error_page = selected_server_->getDefaultErrorPages().at("400");
+  std::string default_error_page = config_.getDefaultErrorPage();
   if (response_status_code_ != 200) {
     if (response_status_code_ >= 300 & response_status_code_ <= 399) {
       return path;
