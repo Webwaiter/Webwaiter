@@ -28,7 +28,7 @@ static void checkBracePair(std::vector<std::string> &tmp_vec, std::stack<std::st
 }
 
 static void checkURL(const std::string &url) {
-  if (url[0] != '/') {
+  if (!(url[0] == '/' || url[0] == '#')) {
     throw FAIL;
   }
 }
