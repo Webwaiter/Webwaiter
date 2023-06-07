@@ -4,6 +4,7 @@
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <dirent.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -83,19 +84,34 @@ std::string Connection::createPagePath() {
     }
   }
   if (isDirectory(path)) {
-    path += "/";
-    path += selected_location_->getIndex();
-    if (access(path.c_str(), R_OK | F_OK) != -1) {
-      return path;
+    std::string index_path(path);
+    index_path += "/";
+    index_path += selected_location_->getIndex();
+    if (access(index_path.c_str(), R_OK | F_OK) != -1) {
+      return index_path;
     } else {
-  // TODO: directory listing logic 구현
-      // return directoryListing();
+      return directoryListing(path);
     }
   } else if (access(path.c_str(), R_OK | F_OK) != -1) {
     return path;
   } 
   response_status_code_ = 404;
   return default_error_page;
+}
+
+std::string Connection::directoryListing(const std::string &path) {
+  std::ofstream directory_list("docs/listing.txt");
+  DIR *path_dir = opendir(path.c_str());
+  if (path_dir == NULL) {
+    throw FAIL;
+  }
+  
+  struct dirent *file = NULL;
+  while ((file = readdir(path_dir)) != NULL) {
+    directory_list << file->d_name << std::endl;  
+  }
+  closedir(path_dir);
+  return "docs/listing.txt";
 }
 
 bool Connection::isCgi(const std::string &path) {
@@ -120,7 +136,6 @@ ReturnState Connection::checkPipeReadDone() {
   }
   response_message_.appendReadBufferToLeftoverBuffer(read_buffer_, read_);
   read_= 0;
-  // 다 못읽은 상태
   return AGAIN;
 }
 
@@ -130,7 +145,7 @@ void Connection::handlingDynamicPage() {
     return;
   }
   response_message_.parseCgiOutput(*selected_server_);
-  response_message_.createResponseMessage(request_message_, *selected_location_);
+  response_message_.createResponseMessage(request_message_, *selected_location_, "");
   write_buffer_ = response_message_.getResponseMessage().data();
   write_buffer_size_ = response_message_.getResponseMessage().size();
   kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
@@ -139,7 +154,7 @@ void Connection::handlingDynamicPage() {
 
 void Connection::handlingStaticPage(const std::string &path) {
   response_message_.createBody(path);
-  response_message_.createResponseMessage(request_message_, *selected_location_);
+  response_message_.createResponseMessage(request_message_, *selected_location_, path);
   // update write buffer & write buffer size
   write_buffer_ = response_message_.getResponseMessage().data();
   write_buffer_size_ = response_message_.getResponseMessage().size();

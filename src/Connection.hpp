@@ -33,6 +33,7 @@ class Connection {
   void setConfigInfo();
   void checkAllowedMethod();
   std::string createPagePath();
+  std::string directoryListing(const std::string &path);
   void parsingRequestMessage();
   void handlingStaticPage(const std::string &path);
   void handlingDynamicPage();

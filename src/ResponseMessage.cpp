@@ -83,15 +83,9 @@ void ResponseMessage::parseField(std::string &field) {
 }
 
 void ResponseMessage::parseCgiOutput(const ServerBlock &server_block) {
-  // 각 헤더 라인의 끝에는 newline으로 구분된다
-  // 헤더 필드와 본문은 newline한줄로 구분된다
-  // 즉, 연속되는 newline 2개가 있으면 본문이 있는 것이다
   parseCgiHeader(server_block);
   parseCgiBody();
-  // body_size check
-  // open default error page & copy to body_ 
   if (body_.size() == 0) {
-    //TODO: change defaultErrorPage to config
     createBody(config_.getDefaultErrorPage());  
   }
 }
@@ -154,10 +148,20 @@ void ResponseMessage::setAllowed(const LocationBlock &location) {
   headers_["allowed"] = allowed;
 }
 
-void ResponseMessage::createHeaderLine(const RequestMessage &request_message, const LocationBlock &location) {
-  //Server: in config
-  //Date: 
-  // If-Modified-Since
+std::string ResponseMessage::findMimeType(const std::string &path) {
+  size_t pos = path.find_last_of('.');
+  if (pos == std::string::npos) {
+    return "text/plain";
+  }
+  std::string extension = path.substr(pos + 1);
+  const std::map<std::string, std::string> &mime_type = config_.getMimeTypes();
+  if (mime_type.find(extension) == mime_type.end()) {
+    return "text/plain";
+  }
+  return mime_type.at(extension);
+}
+
+void ResponseMessage::createHeaderLine(const RequestMessage &request_message, const LocationBlock &location, const std::string &path) {
   const std::map<std::string, std::string> &request_headers = request_message.getHeaders();
   
   headers_["server"] = config_.getServerProgramName();
@@ -170,8 +174,6 @@ void ResponseMessage::createHeaderLine(const RequestMessage &request_message, co
   if (request_headers.find("if-modified-since") != request_headers.end()) {
     setLastModified(request_message, location);
   }
-  // TODO: location block에 redirection 문구가 있으면 status code를 301로 변경하는 로직이
-  //       어딘가 있어야됨
   if (response_status_code_ == 301) {
     headers_["location"] = location.getRedirection();
   }
@@ -181,9 +183,8 @@ void ResponseMessage::createHeaderLine(const RequestMessage &request_message, co
    
   if (body_.size() != 0) {
     headers_["content-length"] = numberToString(body_.size());
-    //TODO: Add logic to find MIME type
     if (headers_.find("content-type") == headers_.end())
-      headers_["content-type"] = "text/html";
+      headers_["content-type"] = findMimeType(path);
   }
 
   for (std::map<std::string, std::string>::iterator it = headers_.begin(); it != headers_.end(); ++it) {
@@ -194,9 +195,9 @@ void ResponseMessage::createHeaderLine(const RequestMessage &request_message, co
   appendCrlf(header_line_);
 }
 
-void ResponseMessage::createResponseMessage(const RequestMessage& request_message, const LocationBlock &location) {
+void ResponseMessage::createResponseMessage(const RequestMessage& request_message, const LocationBlock &location, const std::string &path) {
   createStatusLine();
-  createHeaderLine(request_message, location);
+  createHeaderLine(request_message, location, path);
   response_message_.insert(response_message_.end(), status_line_.begin(), status_line_.end());
   response_message_.insert(response_message_.end(), header_line_.begin(), header_line_.end());
   response_message_.insert(response_message_.end(), body_.begin(), body_.end());
