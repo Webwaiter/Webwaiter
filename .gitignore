@@ -34,7 +34,6 @@ build/
 lib/
 
 # Build generated files
-Makefile
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles/
