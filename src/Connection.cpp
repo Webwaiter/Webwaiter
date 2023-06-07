@@ -2,6 +2,8 @@
 
 #include "src/Connection.hpp"
 
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -239,10 +241,41 @@ void Connection::writingToSocket() {
 }
 
 void Connection::setConfigInfo() {
-  const ServerBlock &sb = config_.getServerBlocks()[0];
-  const LocationBlock &lb = sb.getLocationBlocks()[0];
-  selected_server_ = &sb;
-  selected_location_ = &lb;
+  struct sockaddr_in addr;
+  socklen_t addrlen;
+  getsockname(connection_socket_, &addr, &addrlen);
+  const std::string &server_ip = changeBinaryToIp(addr.sin_addr);
+  const std::string &server_port = numberToString(ntohs(addr.sin_port));
+  const std::string &server_name = request_message_.getHeaders().at("host");
+  const std::vector<ServerBlock> &sbv = config_.getServerBlocks();
+  for (size_t i = 0; i < sbv.size(); ++i) {
+    if (sbv[i].getServerIp() == server_ip && sbv[i].getServerPort() == server_port) {
+      if (sbv[i].getServerName() == server_name) {
+        selected_server_ = &sbv[i];
+        break;
+      }
+      if (selected_server_ == NULL) {
+        selected_server_ = &sbv[i];
+      }
+    }
+  }
+  size_t max_match_count = -1;
+  const std::vector<LocationBlock> &lbv = selected_server_.getLocationBlocks();
+  const std::string &uri = request_message_.getUri();
+  std::vector<std::string> uri_tokens = split(uri, "/");
+  for (size_t i = 0; i < lbv.size(); ++i) {
+    const string &location = lbv[i].getUrl();
+    std::vector<std::string> lb_tokens = split(location, "/");
+    size_t token_size = min(uri_tokens.size(), lb_tokens.size());
+    size_t match_count = 0;
+    while (match_count < token_size && uri_tokens[match_count] == lb_tokens[match_count]) {
+      ++match_count;
+    }
+    if (match_count > max_match_count) {
+      selected_location_ = &lbv[i];
+      max_match_count = match_count;
+    }
+  }
   request_message_.setResourcePath(*selected_location_);
   if (selected_location_->getRedirection() != "") {
     response_status_code_ = 301;
