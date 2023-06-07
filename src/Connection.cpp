@@ -10,6 +10,7 @@
 #include <queue>
 #include <set>
 #include <string>
+#include <algorithm>
 
 #include "src/Config.hpp"
 #include "src/LocationBlock.hpp"
@@ -257,14 +258,15 @@ void Connection::writingToSocket() {
 
 void Connection::setConfigInfo() {
   struct sockaddr_in addr;
-  socklen_t addrlen;
-  getsockname(connection_socket_, &addr, &addrlen);
-  const std::string &server_ip = changeBinaryToIp(addr.sin_addr);
+  socklen_t addrlen = sizeof(addr);
+  getsockname(connection_socket_, reinterpret_cast<struct sockaddr *>(&addr), &addrlen);
+  // const std::string &server_ip = changeBinaryToIp(addr.sin_addr);
+  const std::string &server_ip = "0.0.0.0";
   const std::string &server_port = numberToString(ntohs(addr.sin_port));
   const std::string &server_name = request_message_.getHeaders().at("host");
   const std::vector<ServerBlock> &sbv = config_.getServerBlocks();
   for (size_t i = 0; i < sbv.size(); ++i) {
-    if (sbv[i].getServerIp() == server_ip && sbv[i].getServerPort() == server_port) {
+    if (sbv[i].getServerIP() == server_ip && sbv[i].getServerPort() == server_port) {
       if (sbv[i].getServerName() == server_name) {
         selected_server_ = &sbv[i];
         break;
@@ -274,15 +276,15 @@ void Connection::setConfigInfo() {
       }
     }
   }
-  size_t max_match_count = -1;
-  const std::vector<LocationBlock> &lbv = selected_server_.getLocationBlocks();
+  ssize_t max_match_count = -1;
+  const std::vector<LocationBlock> &lbv = selected_server_->getLocationBlocks();
   const std::string &uri = request_message_.getUri();
   std::vector<std::string> uri_tokens = split(uri, "/");
   for (size_t i = 0; i < lbv.size(); ++i) {
-    const string &location = lbv[i].getUrl();
+    const std::string &location = lbv[i].getUrl();
     std::vector<std::string> lb_tokens = split(location, "/");
-    size_t token_size = min(uri_tokens.size(), lb_tokens.size());
-    size_t match_count = 0;
+    ssize_t token_size = std::min(uri_tokens.size(), lb_tokens.size());
+    ssize_t match_count = 0;
     while (match_count < token_size && uri_tokens[match_count] == lb_tokens[match_count]) {
       ++match_count;
     }
