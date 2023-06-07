@@ -282,7 +282,7 @@ void Connection::setConfigInfo() {
   size_t dot_pos = uri.find('.');
   if (dot_pos != std::string::npos) {
     size_t extension_end = uri.find_first_of("/?", dot_pos);
-    std::string extension = extension_end == std::string::npos ?
+    extension = extension_end == std::string::npos ?
       uri.substr(dot_pos + 1) : uri.substr(dot_pos + 1, extension_end - dot_pos - 1);
   }
   std::vector<std::string> uri_tokens = split(uri, "/");
