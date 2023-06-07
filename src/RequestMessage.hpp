@@ -29,10 +29,11 @@ class RequestMessage {
 
  private:
   enum ParseState {
+    kStartLine,
     kMethod,
     kUri,
     kProtocol,
-    kSkipCrlf,
+    kBetweenHeaderStart,
     kHeaderLine,
     kContentLength,
     kChunkSize,
@@ -46,13 +47,13 @@ class RequestMessage {
   void parseMethod();
   void parseUri();
   void parseProtocol();
-  void skipCrlf();
+  void skipCrlf(ParseState next_state);
   void parseHeaderLine();
   void parseContentLengthBody();
   void parseChunkBody();
-  void parseChunkSize();
-  void parseChunkData();
-  void parseTrailerField();
+  ReturnState parseChunkSize();
+  ReturnState parseChunkData();
+  ReturnState parseTrailerField();
 
   void parseComplete(int response_status_code);
   void validation();

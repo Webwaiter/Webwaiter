@@ -8,7 +8,7 @@ typedef std::deque<char>::iterator deque_iterator;
 typedef std::map<std::string, std::string>::iterator map_iterator;
 
 RequestMessage::RequestMessage(int &response_status_code_)
-    : state_(kMethod), content_length_(0), chunk_size_(0), response_status_code_(response_status_code_) {}
+    : state_(kStartLine), content_length_(0), chunk_size_(0), response_status_code_(response_status_code_) {}
 
 void RequestMessage::appendLeftover(const char *buffer, size_t n) {
   for (size_t i = 0; i < n; ++i) {
@@ -17,7 +17,7 @@ void RequestMessage::appendLeftover(const char *buffer, size_t n) {
 }
 
 void RequestMessage::clear() {
-  state_ = kMethod;
+  state_ = kStartLine;
   written_ = 0;
   content_length_ = 0;
   chunk_size_ = 0;
@@ -41,8 +41,8 @@ ReturnState RequestMessage::parse(const char *buffer, size_t read) {
   appendLeftover(buffer, read);
 
   parseStartLine();
-  if (state_ == kSkipCrlf) {
-    skipCrlf();
+  if (state_ == kBetweenHeaderStart) {
+    skipCrlf(kHeaderLine);
   }
   if (state_ == kHeaderLine) {
     parseHeaderLine();
@@ -74,6 +74,9 @@ void RequestMessage::printRequestMessage() {
 }
 
 void RequestMessage::parseStartLine() {
+  if (state_ == kStartLine) {
+    skipCrlf(kMethod);
+  }
   if (state_ == kMethod) {
     parseMethod();
   }
@@ -93,6 +96,9 @@ void RequestMessage::parseMethod() {
 
   method_.insert(method_.begin(), leftover_.begin(), space_pos);
   leftover_.erase(leftover_.begin(), space_pos + 1);
+  if (!(method_ == "GET" || method_ == "POST" || method_ == "DELETE")) {
+    parseComplete(501);
+  }
   state_ = kUri;
 }
 
@@ -121,10 +127,10 @@ void RequestMessage::parseProtocol() {
     parseComplete(400);
     return;
   }
-  state_ = kSkipCrlf;
+  state_ = kBetweenHeaderStart;
 }
 
-void RequestMessage::skipCrlf() {
+void RequestMessage::skipCrlf(ParseState next_state) {
   deque_iterator line_pos;
   while (true) {
     line_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
@@ -132,13 +138,13 @@ void RequestMessage::skipCrlf() {
       return;
     }
 
-    std::string field_line(leftover_.begin(), line_pos);
-    if (field_line.empty()) {
+    std::string line(leftover_.begin(), line_pos);
+    if (line.empty()) {
       leftover_.erase(leftover_.begin(), line_pos + kCrlfLength);
       continue;
     }
-    if (!isblank(field_line.front())) {
-      state_ = kHeaderLine;
+    if (!isblank(line.front())) {
+      state_ = next_state;
       return;
     }
     parseComplete(400);
@@ -216,66 +222,77 @@ void RequestMessage::parseContentLengthBody() {
 }
 
 void RequestMessage::parseChunkBody() {
-  if (state_ == kChunkSize) {
-    parseChunkSize();
+  if (!(state_ == kChunkSize || state_ == kChunkData || state_ == kTrailerField)) {
+    return;
   }
-  if (state_ == kChunkData) {
-    parseChunkData();
-  }
-  if (state_ == kTrailerField) {
-    parseTrailerField();
+  ReturnState return_state = SUCCESS;
+  while (return_state == SUCCESS) {
+    if (state_ == kChunkSize) {
+      return_state = parseChunkSize();
+    }
+    if (state_ == kChunkData) {
+      return_state = parseChunkData();
+    }
+    if (state_ == kTrailerField) {
+      return_state = parseTrailerField();
+    }
+    if (state_ == kParseComplete) {
+      return;
+    }
   }
 }
 
-void RequestMessage::parseChunkSize() {
+ReturnState RequestMessage::parseChunkSize() {
   deque_iterator crlf_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
   if (crlf_pos == leftover_.end()) {
-    return;
+    return AGAIN;
   }
 
   std::string chunk_size(leftover_.begin(), crlf_pos);
   leftover_.erase(leftover_.begin(), crlf_pos + kCrlfLength);
   if (chunk_size.empty()) {
     parseComplete(400);
-    return;
+    return SUCCESS;
   }
   char *end;
   chunk_size_ = strtol(chunk_size.c_str(), &end, 16);
   if (*end != '\0') {
     parseComplete(400);
-    return;
+    return SUCCESS;
   }
   if (chunk_size_ == 0) {
     state_ = kTrailerField;
-    return;
+    return SUCCESS;
   }
   content_length_ += chunk_size_;
   state_ = kChunkData;
+  return SUCCESS;
 }
 
-void RequestMessage::parseChunkData() {
+ReturnState RequestMessage::parseChunkData() {
   deque_iterator crlf_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
   if (crlf_pos == leftover_.end()) {
-    return;
+    return AGAIN;
   }
 
   size_t insertedData = crlf_pos - leftover_.begin();
   if (insertedData != static_cast<size_t>(chunk_size_)) {
     parseComplete(400);
-    return;
+    return SUCCESS;
   }
 
   body_.insert(body_.end(), leftover_.begin(), crlf_pos);
   leftover_.erase(leftover_.begin(), crlf_pos + kCrlfLength);
   state_ = kChunkSize;
+  return SUCCESS;
 }
 
-void RequestMessage::parseTrailerField() {
+ReturnState RequestMessage::parseTrailerField() {
   deque_iterator line_pos;
   while (true) {
     line_pos = std::search(leftover_.begin(), leftover_.end(), kCrlf, kCrlf + kCrlfLength);
     if (line_pos == leftover_.end()) {
-      return;
+      return AGAIN;
     }
 
     std::string field_line(leftover_.begin(), line_pos);
@@ -283,7 +300,7 @@ void RequestMessage::parseTrailerField() {
     if (field_line.empty()) {
       removeChunkedInHeader();
       parseComplete(200);
-      return;
+      return SUCCESS;
     }
     parseField(field_line);
   }
@@ -300,10 +317,6 @@ void RequestMessage::removeChunkedInHeader() {
 
 void RequestMessage::validation() {
   if (response_status_code_ != 200) {
-    return;
-  }
-  if (!(method_ == "GET" || method_ == "POST" || method_ == "DELETE")) {
-    response_status_code_ = 501;
     return;
   }
   if (headers_.find("host") == headers_.end()) {
