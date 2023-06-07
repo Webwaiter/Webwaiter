@@ -62,19 +62,12 @@ static void checkCgiPath(const std::string &cgi_path) {
   }
 }
 
-static void checkCGIExtention(const std::string &cgi_extention) {
-  if (!(cgi_extention == "php" || cgi_extention == "py" || cgi_extention == "bla")) {
-    throw FAIL;
-  }
-}
-
 void LocationBlock::checkSemantics() const {
   checkURL(url_);
   checkRootDir(root_dir_);
   checkAllowedMethod(allowed_method_);
   checkDirectoryListing(directory_listing_);
   checkCgiPath(cgi_path_);
-  checkCGIExtention(cgi_extension_);
 }
 
 void LocationBlock::parseLocationBlock(std::ifstream &file) {
