@@ -84,6 +84,7 @@ class Connection {
   time_t time_;
   bool is_connection_close_;
   State state_;
+  int cgi_pid_;
 };
 
 #endif  // SRC_CONNECTION_HPP
