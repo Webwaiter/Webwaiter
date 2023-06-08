@@ -408,7 +408,7 @@ void Connection::executeCgiProcess(const std::string &path) {
   if (pid == 0) {
     // plumbing
     if (signal(SIGPIPE, SIG_DFL) == SIG_ERR) {
-        throw FAIL;
+        exit(1);
     }
     if (to_cgi[0] != STDIN_FILENO) {
       if (dup2(to_cgi[0], STDIN_FILENO) != STDIN_FILENO) {
