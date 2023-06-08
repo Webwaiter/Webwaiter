@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <cstdio>
 #include <queue>
 #include <set>
 #include <string>
@@ -23,7 +24,7 @@ Connection::Connection(int connection_socket, Kqueue& kqueue, const Config& conf
       response_status_code_(200), kqueue_(kqueue), config_(config), read_(0), read_cnt_(0), leftover_data_(-1),
       write_buffer_(NULL), written_(0), write_buffer_size_(0), request_message_(response_status_code_),
       response_message_(response_status_code_, config_, kqueue_), selected_server_(NULL), selected_location_(NULL), time_(time(NULL)),
-      is_connection_close_(false) {}
+      is_connection_close_(false), cgi_pid_(-1) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
@@ -436,6 +437,7 @@ void Connection::executeCgiProcess(const std::string &path) {
   }
 
   // parent process (server)
+  cgi_pid_ = pid;
   close(from_cgi[1]);
   close(to_cgi[0]);
   if (fcntl(from_cgi[0], F_SETFL, O_NONBLOCK) == -1) {
@@ -470,6 +472,8 @@ void Connection::clear() {
   write_buffer_size_ = 0;
   request_message_.clear();
   response_message_.clear();
+  cgi_pid_ = -1;
+  std::remove("docs/listing.txt");
 }
 
 int Connection::getPipeReadFd() const {
