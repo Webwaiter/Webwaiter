@@ -28,7 +28,7 @@ class Connection {
   int getPipeReadFd() const;
   ReturnState work();
   bool checkReadSuccess();
-  bool isTimeOut();
+  ReturnState checkTimeOut();
   bool isCgi(const std::string &path);
   void setConfigInfo();
   void checkAllowedMethod();

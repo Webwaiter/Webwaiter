@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include <queue>
 #include <set>
@@ -164,22 +165,30 @@ void Connection::handlingStaticPage(const std::string &path) {
   state_ = kWritingToSocket;
 }
 
-bool Connection::isTimeOut() {
+ReturnState Connection::checkTimeOut() {
   if (state_ == kReadingFromSocket && read_ == 0) {
      if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
-      return true;
+      return TIMEOUT;
     }
   } else {
      if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
-      return true;
+      return SYSTEM_OVERLOAD;
      }
   }
-  return false;
+  return AGAIN;
 }
 
 ReturnState Connection::work() {
-  if (isTimeOut()){
+  ReturnState time_out = checkTimeOut();
+  if (time_out == TIMEOUT) {
     return CONNECTION_CLOSE;
+  }
+  if (time_out == SYSTEM_OVERLOAD) {
+    if (cgi_pid_ != -1) {
+      kill(cgi_pid_, SIGINT);
+      std::cout << "killed: " << cgi_pid_ << std::endl;
+    }
+    handlingStaticPage(config_.getDefaultErrorPage());
   }
   switch (state_) {
     case kReadingFromSocket:
@@ -275,7 +284,7 @@ void Connection::writingToSocket() {
   state_ = kReadingFromSocket;
   kqueue_.setEvent(connection_socket_, EVFILT_READ, EV_ENABLE, 0, 0, this);
 }
-
+   
 void Connection::setConfigInfo() {
   struct sockaddr_in addr;
   socklen_t addrlen = sizeof(addr);
