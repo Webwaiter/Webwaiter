@@ -3,9 +3,9 @@
 #ifndef SRC_CONNECTION_HPP_
 #define SRC_CONNECTION_HPP_
 
-
 #include <sys/event.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 #include <vector>
 #include <queue>
@@ -84,6 +84,7 @@ class Connection {
   time_t time_;
   bool is_connection_close_;
   State state_;
+  pid_t cgi_pid_;
 };
 
 #endif  // SRC_CONNECTION_HPP
