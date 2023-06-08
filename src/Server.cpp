@@ -86,8 +86,7 @@ void Server::run() {
           break;
         }
         kqueue_.setEvent(id, EVFILT_WRITE, EV_DISABLE, 0, 0, NULL);
-      } else if (filter == EVFILT_PROC) {
-        
+      } else if (filter == EVFILT_PROC) {   
         int ret = waitpid(id, NULL, 0);
         int status = event_list[i].data;
         if ((WIFEXITED(status) && WEXITSTATUS(status) != 0)
