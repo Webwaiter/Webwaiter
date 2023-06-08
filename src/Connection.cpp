@@ -41,6 +41,9 @@ void Connection::parsingRequestMessage() {
   if (response_status_code_ == 200) {
     setConfigInfo();
   }
+  if (response_status_code_ == 200) {
+    request_message_.checkOverMaxClientBodySize(selected_server_);
+  }
   // TODO: allowed method 검사
   if (response_status_code_ == 200) {
     checkAllowedMethod();
@@ -73,7 +76,7 @@ std::string Connection::createPagePath() {
     return default_error_page;
   }
 
-  path += selected_location_->getRootDir(); 
+  path += selected_location_->getRootDir();
   path += "/"; 
   path += request_message_.getResourcePath();
 

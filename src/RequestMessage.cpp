@@ -373,3 +373,9 @@ void RequestMessage::setResourcePath(const LocationBlock &location_block) {
   pos = ret.find(location_block_url);
   resource_path_ = ret.substr(pos + location_block_url.size());
 }
+
+void RequestMessage::checkOverMaxClientBodySize(const ServerBlock *server_block) {
+  if (body_.size() > static_cast<size_t>(server_block->getClientBodySize())) {
+    response_status_code_ = 400;
+  }
+}

@@ -9,11 +9,13 @@
 
 #include "src/utils.hpp"
 #include "src/LocationBlock.hpp"
+#include "ServerBlock.hpp"
 
 class RequestMessage {
  public:
   explicit RequestMessage(int &response_status_code_);
   ReturnState parse(const unsigned char *buffer, size_t read);
+  void checkOverMaxClientBodySize(const ServerBlock *server_block);
   void clear();
 
   const std::string &getMethod(void) const;
