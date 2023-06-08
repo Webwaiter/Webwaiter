@@ -69,6 +69,7 @@ void Server::run() {
       if (isListenSocketEvent(id)) {
         try {
           Connection *new_connection = acceptClient(id);
+          std::cout << "socket : " << new_connection->getConnectionSocket() << std::endl;
           connections.insert(new_connection);
           work_queue.push_back(new_connection);
         } catch (int &e) {
@@ -91,6 +92,8 @@ void Server::run() {
         int status = event_list[i].data;
         if ((WIFEXITED(status) && WEXITSTATUS(status) != 0)
             || WIFSIGNALED(status) || ret != id) {
+          std::cout << "close : " << ptr->getConnectionSocket() << std::endl;
+          // ptr->sendError();
           eraseConnection(ptr, connections, work_queue);
           break;
         }
@@ -101,6 +104,7 @@ void Server::run() {
       Connection *connection = work_queue.front();
       work_queue.pop_front();
       if (connection->work() == CONNECTION_CLOSE) {
+        std::cout << "close : " << connection->getConnectionSocket() << std::endl;
         eraseConnection(connection, connections, work_queue);
       } else {
         work_queue.push_back(connection);
