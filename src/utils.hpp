@@ -21,7 +21,9 @@ enum ReturnState {
   SUCCESS,
   FAIL,
   AGAIN,
-  CONNECTION_CLOSE
+  CONNECTION_CLOSE,
+  TIMEOUT,
+  SYSTEM_OVERLOAD
 };
 
 std::vector<std::string> split(std::string input, std::string delimiter);

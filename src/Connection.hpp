@@ -24,6 +24,7 @@ class Connection {
  public:
   Connection(int connection_socket, Kqueue& kqueue, const Config& config);
   int getConnectionSocket() const;
+  void setResponseStatusCode(int response_status_code);
   unsigned char *getReadBuffer();
   int getPipeReadFd() const;
   ReturnState work();
@@ -45,6 +46,7 @@ class Connection {
   ReturnState readHandler(const struct kevent &event);
   void closeConnection();
   void clear();
+  void clearCgiPid();
 
  private:
   enum State {
