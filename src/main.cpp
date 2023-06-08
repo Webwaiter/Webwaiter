@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <signal.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -62,6 +63,9 @@ int main(int argc, char *argv[]) {
       config_path = "docs/conf/default.conf";
     } else {
       config_path = argv[1];
+    }
+    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+      return 1;
     }
     Config config(config_path.c_str());
     std::vector<int> listen_socket;

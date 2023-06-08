@@ -24,7 +24,7 @@ class Connection {
  public:
   Connection(int connection_socket, Kqueue& kqueue, const Config& config);
   int getConnectionSocket() const;
-  char *getReadBuffer();
+  unsigned char *getReadBuffer();
   int getPipeReadFd() const;
   ReturnState work();
   bool checkReadSuccess();
@@ -65,12 +65,12 @@ class Connection {
   Kqueue &kqueue_;
   const Config &config_;
 
-  char read_buffer_[8096];
+  unsigned char read_buffer_[8096];
   ssize_t read_;
   size_t read_cnt_;
   intptr_t leftover_data_;
   
-  const char *write_buffer_;
+  const unsigned char *write_buffer_;
   ssize_t written_;
   size_t write_buffer_size_;
 

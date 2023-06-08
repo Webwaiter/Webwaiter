@@ -130,11 +130,8 @@ bool Connection::isCgi(const std::string &path) {
 
 ReturnState Connection::checkPipeReadDone() {
   if (leftover_data_ == 0) {
-    //TODO: pipe close timing change
-    close(pipe_write_fd_);
     close(pipe_read_fd_);
     pipe_read_fd_ = -1;
-    pipe_write_fd_ = -1;
     return SUCCESS;
   }
   response_message_.appendReadBufferToLeftoverBuffer(read_buffer_, read_);
@@ -147,6 +144,7 @@ void Connection::handlingDynamicPage() {
     kqueue_.setEvent(pipe_read_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
     return;
   }
+  updateTime(time_);
   response_message_.parseCgiOutput(*selected_server_);
   response_message_.createResponseMessage(request_message_, *selected_location_, "");
   write_buffer_ = response_message_.getResponseMessage().data();
@@ -189,15 +187,12 @@ ReturnState Connection::work() {
       break;
     case kWritingToPipe:
       writingToPipe();
-      updateTime(time_);
       break;
     case kReadingFromPipe:
       handlingDynamicPage();
-      updateTime(time_);
       break;
     case kWritingToSocket:
       writingToSocket();
-      updateTime(time_);
       break;
   }
   if (is_connection_close_) {
@@ -238,7 +233,7 @@ ReturnState Connection::readHandler(const struct kevent &event) {
   return SUCCESS;
 }
 
-char *Connection::getReadBuffer() {
+unsigned char *Connection::getReadBuffer() {
   return read_buffer_;
 }
 
@@ -257,9 +252,12 @@ void Connection::writingToPipe() {
     kqueue_.setEvent(pipe_write_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
     return;
   }
+  updateTime(time_);
   written_ = 0;
   write_buffer_ = NULL;
   write_buffer_size_ = 0;
+  close(pipe_write_fd_);
+  pipe_write_fd_ = -1;
   state_ = kReadingFromPipe;
 }
 
@@ -268,6 +266,7 @@ void Connection::writingToSocket() {
     kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
     return;
   }
+  updateTime(time_);
   const std::map<std::string, std::string> &response_headers = response_message_.getHeaders();
   if (response_headers.at("connection") == "close") {
     is_connection_close_ = true;
@@ -408,6 +407,9 @@ void Connection::executeCgiProcess(const std::string &path) {
   // child process (CGI)
   if (pid == 0) {
     // plumbing
+    if (signal(SIGPIPE, SIG_DFL) == SIG_ERR) {
+        exit(1);
+    }
     if (to_cgi[0] != STDIN_FILENO) {
       if (dup2(to_cgi[0], STDIN_FILENO) != STDIN_FILENO) {
         is_connection_close_ = true;

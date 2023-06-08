@@ -10,7 +10,7 @@ typedef std::map<std::string, std::string>::iterator map_iterator;
 RequestMessage::RequestMessage(int &response_status_code_)
     : state_(kStartLine), content_length_(0), chunk_size_(0), response_status_code_(response_status_code_) {}
 
-void RequestMessage::appendLeftover(const char *buffer, size_t n) {
+void RequestMessage::appendLeftover(const unsigned char *buffer, size_t n) {
   for (size_t i = 0; i < n; ++i) {
     leftover_.push_back(buffer[i]);
   }
@@ -33,7 +33,7 @@ void RequestMessage::parseComplete(int response_status_code) {
   response_status_code_ = response_status_code;
 }
 
-ReturnState RequestMessage::parse(const char *buffer, size_t read) {
+ReturnState RequestMessage::parse(const unsigned char *buffer, size_t read) {
   if (read == 0 && leftover_.empty()) {
     return AGAIN;
   }
