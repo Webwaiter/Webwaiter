@@ -130,11 +130,8 @@ bool Connection::isCgi(const std::string &path) {
 
 ReturnState Connection::checkPipeReadDone() {
   if (leftover_data_ == 0) {
-    //TODO: pipe close timing change
-    close(pipe_write_fd_);
     close(pipe_read_fd_);
     pipe_read_fd_ = -1;
-    pipe_write_fd_ = -1;
     return SUCCESS;
   }
   response_message_.appendReadBufferToLeftoverBuffer(read_buffer_, read_);
@@ -260,6 +257,8 @@ void Connection::writingToPipe() {
   written_ = 0;
   write_buffer_ = NULL;
   write_buffer_size_ = 0;
+  close(pipe_write_fd_);
+  pipe_write_fd_ = -1;
   state_ = kReadingFromPipe;
 }
 
