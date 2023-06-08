@@ -257,6 +257,9 @@ void Connection::writingToPipe() {
     kqueue_.setEvent(pipe_write_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
     return;
   }
+  written_ = 0;
+  write_buffer_ = NULL;
+  write_buffer_size_ = 0;
   state_ = kReadingFromPipe;
 }
 
