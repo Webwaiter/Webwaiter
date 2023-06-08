@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <cstdio>
 #include <queue>
 #include <set>
 #include <string>
@@ -470,6 +471,7 @@ void Connection::clear() {
   request_message_.clear();
   response_message_.clear();
   cgi_pid_ = -1;
+  std::remove("docs/listing.txt");
 }
 
 int Connection::getPipeReadFd() const {
