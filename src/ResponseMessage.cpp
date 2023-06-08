@@ -91,10 +91,10 @@ void ResponseMessage::parseCgiOutput(const ServerBlock &server_block) {
 }
 
 void ResponseMessage::createBody(const std::string &path) {
-  std::ifstream file(path.c_str());
-  char c;
-  while ((c = file.get()) != -1 ) {
-    body_.push_back(c);
+  std::ifstream file(path.c_str(), std::ios::binary);
+  int c;
+  while ((c = file.get()) != -1) {
+    body_.push_back(static_cast<unsigned char>(c));
   }
 }
 
@@ -212,15 +212,15 @@ void ResponseMessage::clear() {
   response_message_.clear();
 }
 
-const std::vector<char> &ResponseMessage::getStatusLine() const {
+const std::vector<unsigned char> &ResponseMessage::getStatusLine() const {
   return status_line_;
 }
 
-const std::vector<char> &ResponseMessage::getHeaderLine() const {
+const std::vector<unsigned char> &ResponseMessage::getHeaderLine() const {
   return header_line_;
 }
 
-const std::vector<char> &ResponseMessage::getBody() const {
+const std::vector<unsigned char> &ResponseMessage::getBody() const {
   return body_;
 }
 
@@ -228,6 +228,6 @@ const std::map<std::string, std::string> &ResponseMessage::getHeaders() const {
   return headers_;
 }
 
-const std::vector<char> &ResponseMessage::getResponseMessage() const {
+const std::vector<unsigned char> &ResponseMessage::getResponseMessage() const {
   return response_message_;
 }

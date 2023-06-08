@@ -24,7 +24,7 @@ class RequestMessage {
   std::string getContentType() const;
   const std::string &getResourcePath() const;
   void setResourcePath(const LocationBlock &location_block);
-  const std::vector<char> &getBody() const;
+  const std::vector<unsigned char> &getBody() const;
   void printRequestMessage();
 
  private:
@@ -73,7 +73,7 @@ class RequestMessage {
   std::string protocol_;
   std::string resource_path_;
   std::map<std::string, std::string> headers_;
-  std::vector<char> body_;
+  std::vector<unsigned char> body_;
   int &response_status_code_;
 };
 
