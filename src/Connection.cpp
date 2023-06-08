@@ -144,6 +144,7 @@ void Connection::handlingDynamicPage() {
     kqueue_.setEvent(pipe_read_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
     return;
   }
+  updateTime(time_);
   response_message_.parseCgiOutput(*selected_server_);
   response_message_.createResponseMessage(request_message_, *selected_location_, "");
   write_buffer_ = response_message_.getResponseMessage().data();
@@ -186,15 +187,12 @@ ReturnState Connection::work() {
       break;
     case kWritingToPipe:
       writingToPipe();
-      updateTime(time_);
       break;
     case kReadingFromPipe:
       handlingDynamicPage();
-      updateTime(time_);
       break;
     case kWritingToSocket:
       writingToSocket();
-      updateTime(time_);
       break;
   }
   if (is_connection_close_) {
@@ -254,6 +252,7 @@ void Connection::writingToPipe() {
     kqueue_.setEvent(pipe_write_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
     return;
   }
+  updateTime(time_);
   written_ = 0;
   write_buffer_ = NULL;
   write_buffer_size_ = 0;
@@ -267,6 +266,7 @@ void Connection::writingToSocket() {
     kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
     return;
   }
+  updateTime(time_);
   const std::map<std::string, std::string> &response_headers = response_message_.getHeaders();
   if (response_headers.at("connection") == "close") {
     is_connection_close_ = true;
