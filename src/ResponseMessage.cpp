@@ -14,7 +14,7 @@
 typedef std::deque<char>::iterator deque_iterator;
 
 ResponseMessage::ResponseMessage(int &response_status_code, const Config& config, Kqueue& kqueue) : response_status_code_(response_status_code), config_(config), kqueue_(kqueue) {}
-void ResponseMessage::appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read) {
+void ResponseMessage::appendReadBufferToLeftoverBuffer(const unsigned char *read_buffer, ssize_t read) {
   for (ssize_t i = 0; i < read; ++i) {
     leftover_.push_back(read_buffer[i]);
   }

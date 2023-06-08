@@ -13,7 +13,7 @@
 class RequestMessage {
  public:
   explicit RequestMessage(int &response_status_code_);
-  ReturnState parse(const char *buffer, size_t read);
+  ReturnState parse(const unsigned char *buffer, size_t read);
   void clear();
 
   const std::string &getMethod(void) const;
@@ -42,7 +42,7 @@ class RequestMessage {
     kParseComplete
   };
 
-  void appendLeftover(const char *buffer, size_t n);
+  void appendLeftover(const unsigned char *buffer, size_t n);
   void parseStartLine();
   void parseMethod();
   void parseUri();

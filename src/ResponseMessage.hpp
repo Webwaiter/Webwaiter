@@ -15,7 +15,7 @@ class ResponseMessage {
  public:
   explicit ResponseMessage(int &response_status_code, const Config& config, Kqueue& kqueue);
   ResponseMessage &operator=(const ResponseMessage &rhs);
-  void appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read);
+  void appendReadBufferToLeftoverBuffer(const unsigned char *read_buffer, ssize_t read);
   void parseCgiOutput(const ServerBlock &server_block);
   void createResponseMessage(const RequestMessage& request_message, const LocationBlock &location, const std::string &path);
   const std::vector<unsigned char> &getStatusLine() const;

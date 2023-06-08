@@ -238,7 +238,7 @@ ReturnState Connection::readHandler(const struct kevent &event) {
   return SUCCESS;
 }
 
-char *Connection::getReadBuffer() {
+unsigned char *Connection::getReadBuffer() {
   return read_buffer_;
 }
 
@@ -408,6 +408,9 @@ void Connection::executeCgiProcess(const std::string &path) {
   // child process (CGI)
   if (pid == 0) {
     // plumbing
+    if (signal(SIGPIPE, SIG_DFL) == SIG_ERR) {
+        throw FAIL;
+    }
     if (to_cgi[0] != STDIN_FILENO) {
       if (dup2(to_cgi[0], STDIN_FILENO) != STDIN_FILENO) {
         is_connection_close_ = true;
