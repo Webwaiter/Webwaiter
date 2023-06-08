@@ -73,7 +73,9 @@ std::string Connection::createPagePath() {
     return default_error_page;
   }
 
-  path = selected_location_->getRootDir() + request_message_.getResourcePath();
+  path += selected_location_->getRootDir(); 
+  path += "/"; 
+  path += request_message_.getResourcePath();
 
   if (request_message_.getMethod() == "DELETE") {
     if (deleteFile(path)) {
@@ -111,6 +113,7 @@ std::string Connection::directoryListing(const std::string &path) {
     directory_list << file->d_name << std::endl;  
   }
   closedir(path_dir);
+  response_status_code_ = 404;
   return "docs/listing.txt";
 }
 
@@ -118,7 +121,7 @@ bool Connection::isCgi(const std::string &path) {
   size_t pos = path.find_last_of('.');
   if (pos != std::string::npos) {
     std::string extension = path.substr(pos + 1);
-    if (extension == selected_location_->getCgiExtension()) {
+    if (selected_location_ != NULL && extension == selected_location_->getCgiExtension()) {
       return true;
     }
   }
@@ -254,6 +257,9 @@ void Connection::writingToPipe() {
     kqueue_.setEvent(pipe_write_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
     return;
   }
+  written_ = 0;
+  write_buffer_ = NULL;
+  write_buffer_size_ = 0;
   state_ = kReadingFromPipe;
 }
 

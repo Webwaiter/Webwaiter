@@ -18,11 +18,11 @@ class ResponseMessage {
   void appendReadBufferToLeftoverBuffer(const char *read_buffer, ssize_t read);
   void parseCgiOutput(const ServerBlock &server_block);
   void createResponseMessage(const RequestMessage& request_message, const LocationBlock &location, const std::string &path);
-  const std::vector<char> &getStatusLine() const;
-  const std::vector<char> &getHeaderLine() const;
-  const std::vector<char> &getBody() const;
+  const std::vector<unsigned char> &getStatusLine() const;
+  const std::vector<unsigned char> &getHeaderLine() const;
+  const std::vector<unsigned char> &getBody() const;
   const std::map<std::string, std::string> &getHeaders() const;
-  const std::vector<char> &getResponseMessage() const;
+  const std::vector<unsigned char> &getResponseMessage() const;
   void createBody(const std::string &path);
   void clear();
 
@@ -40,8 +40,8 @@ class ResponseMessage {
   Kqueue& kqueue_;
   std::map<std::string, std::string> headers_;
   std::deque<char> leftover_;
-  std::vector<char> status_line_;
-  std::vector<char> header_line_;
-  std::vector<char> body_;
-  std::vector<char> response_message_;
+  std::vector<unsigned char> status_line_;
+  std::vector<unsigned char> header_line_;
+  std::vector<unsigned char> body_;
+  std::vector<unsigned char> response_message_;
 };
