@@ -72,22 +72,22 @@ void Server::run() {
       if (isListenSocketEvent(id)) {
         try {
           Connection *new_connection = acceptClient(id);
-          log << "socket: " << new_connection->getConnectionSocket() << std::endl;
+          log_ << "socket: " << new_connection->getConnectionSocket() << std::endl;
           connections.insert(new_connection);
           work_queue.push_back(new_connection);
         } catch (int &e) {
-          log << "accept error: " << std::strerror(errno) << std::endl;
+          log_ << "accept error: " << std::strerror(errno) << std::endl;
         }
       } else if (filter == EVFILT_READ) {
         if (ptr->readHandler(event_list[i]) == FAIL) {
-          log << "close read" << std::endl;
+          log_ << "close read" << std::endl;
           eraseConnection(ptr, connections, work_queue);
           break;
         }
         kqueue_.setEvent(id, EVFILT_READ, EV_DISABLE, 0, 0, NULL);
       } else if (filter == EVFILT_WRITE) {
         if (ptr->writeHandler(event_list[i]) == FAIL) {
-          log << "close write" << std::endl;
+          log_ << "close write" << std::endl;
           eraseConnection(ptr, connections, work_queue);
           break;
         }
@@ -108,7 +108,7 @@ void Server::run() {
       Connection *connection = work_queue.front();
       work_queue.pop_front();
       if (connection->work() == CONNECTION_CLOSE) {
-        log << "close: " << connection->getConnectionSocket() << std::endl;
+        log_ << "close: " << connection->getConnectionSocket() << std::endl;
         eraseConnection(connection, connections, work_queue);
       } else {
         work_queue.push_back(connection);
