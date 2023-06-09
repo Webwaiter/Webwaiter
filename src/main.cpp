@@ -46,7 +46,7 @@ static void setupListenSocket(Config &config, std::vector<int> &listen_sockets) 
         exit(1);
       }
     }
-    if (listen(listen_socket, 5) == -1) {
+    if (listen(listen_socket, 25) == -1) {
       std::perror("listen() error");
       exit(1);
     }
