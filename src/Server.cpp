@@ -6,8 +6,11 @@
 #include <unistd.h>
 #include <sys/event.h>
 
+#include <cerrno>
 #include <cstdio>
+#include <cstring>
 #include <deque>
+#include <fstream>
 #include <set>
 
 #include "src/Config.hpp"
@@ -15,8 +18,8 @@
 #include "src/Kqueue.hpp"
 #include "src/utils.hpp"
 
-Server::Server(const Config &config, const std::vector<int> &listen_sockets)
-    : config_(config), listen_sockets_(listen_sockets), kqueue_() {
+Server::Server(const Config &config, const std::vector<int> &listen_sockets, std::ofstream &log)
+    : config_(config), listen_sockets_(listen_sockets), kqueue_(), log_(log) {
   for (size_t i = 0; i < listen_sockets.size(); ++i) {
     kqueue_.setEvent(listen_sockets[i], EVFILT_READ, EV_ADD, 0, 0, NULL);
   }
@@ -69,22 +72,22 @@ void Server::run() {
       if (isListenSocketEvent(id)) {
         try {
           Connection *new_connection = acceptClient(id);
-          std::cout << "socket : " << new_connection->getConnectionSocket() << std::endl;
+          log << "socket: " << new_connection->getConnectionSocket() << std::endl;
           connections.insert(new_connection);
           work_queue.push_back(new_connection);
         } catch (int &e) {
-          std::perror("accept() error");
+          log << "accept error: " << std::strerror(errno) << std::endl;
         }
       } else if (filter == EVFILT_READ) {
         if (ptr->readHandler(event_list[i]) == FAIL) {
-          std::cout << "close read" << std::endl;
+          log << "close read" << std::endl;
           eraseConnection(ptr, connections, work_queue);
           break;
         }
         kqueue_.setEvent(id, EVFILT_READ, EV_DISABLE, 0, 0, NULL);
       } else if (filter == EVFILT_WRITE) {
         if (ptr->writeHandler(event_list[i]) == FAIL) {
-          std::cout << "close write" << std::endl;
+          log << "close write" << std::endl;
           eraseConnection(ptr, connections, work_queue);
           break;
         }
@@ -105,7 +108,7 @@ void Server::run() {
       Connection *connection = work_queue.front();
       work_queue.pop_front();
       if (connection->work() == CONNECTION_CLOSE) {
-        std::cout << "close he : " << connection->getConnectionSocket() << std::endl;
+        log << "close: " << connection->getConnectionSocket() << std::endl;
         eraseConnection(connection, connections, work_queue);
       } else {
         work_queue.push_back(connection);

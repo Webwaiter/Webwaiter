@@ -8,6 +8,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <vector>
 
 #include "src/Config.hpp"
@@ -54,6 +55,7 @@ static void setupListenSocket(Config &config, std::vector<int> &listen_sockets) 
 }
 
 int main(int argc, char *argv[]) {
+  std::ofstream log("log.txt");
   if (!(argc == 2 || argc == 1)) {
     return 1;
   }
@@ -71,10 +73,10 @@ int main(int argc, char *argv[]) {
     std::vector<int> listen_socket;
     setupListenSocket(config, listen_socket);
 
-    Server server(config, listen_socket);
+    Server server(config, listen_socket, log);
     server.run();
   } catch (ReturnState) {
-    std::cout << "error in config file\n";
+    log << "error in config file\n";
     return 1;
   }
   return 0;
