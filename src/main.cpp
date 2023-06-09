@@ -39,6 +39,7 @@ static void setupListenSocket(Config &config, std::vector<int> &listen_sockets) 
              reinterpret_cast<const struct sockaddr *>(&listen_addr),
              sizeof(listen_addr)) == -1) {
       if (errno == EADDRINUSE) {
+        close(listen_socket);
         continue;
       }
       else {
@@ -72,7 +73,10 @@ int main(int argc, char *argv[]) {
     Config config(config_path.c_str());
     std::vector<int> listen_socket;
     setupListenSocket(config, listen_socket);
-
+    if (listen_socket.size() == 0) {
+      log << "nothing to listen\n";
+      return 1;
+    }
     Server server(config, listen_socket, log);
     server.run();
   } catch (ReturnState) {
