@@ -9,8 +9,8 @@ OBJ = $(SRC:.cpp=.o)
 
 CC = c++
 
-CFLAG = -Wall -Wextra -Werror -std=c++98 -pedantic-errors -I. -g3 -fsanitize=address
-# CFLAG = -Wall -Wextra -Werror -std=c++98 -pedantic-errors -I.
+# CFLAG = -Wall -Wextra -Werror -std=c++98 -pedantic-errors -I. -g3 -fsanitize=address
+CFLAG = -Wall -Wextra -Werror -std=c++98 -pedantic-errors -I.
 
 all: .all_check
 
