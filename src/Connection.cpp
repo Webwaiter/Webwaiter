@@ -14,6 +14,8 @@
 #include <set>
 #include <string>
 #include <algorithm>
+#include <exception>
+#include <stdexcept>
 
 #include "src/Config.hpp"
 #include "src/LocationBlock.hpp"
@@ -108,7 +110,7 @@ std::string Connection::directoryListing(const std::string &path) {
   std::ofstream directory_list("docs/listing.txt");
   DIR *path_dir = opendir(path.c_str());
   if (path_dir == NULL) {
-    throw FAIL;
+    throw std::runtime_error("dir error");
   }
   
   struct dirent *file = NULL;
@@ -295,8 +297,7 @@ void Connection::setConfigInfo() {
   struct sockaddr_in addr;
   socklen_t addrlen = sizeof(addr);
   getsockname(connection_socket_, reinterpret_cast<struct sockaddr *>(&addr), &addrlen);
-  // const std::string &server_ip = changeBinaryToIp(addr.sin_addr);
-  const std::string &server_ip = "0.0.0.0";
+  const std::string &server_ip = changeBinaryToIp(addr.sin_addr);
   const std::string &server_port = numberToString(ntohs(addr.sin_port));
   const std::string &server_name = request_message_.getHeaders().at("host");
   const std::vector<ServerBlock> &sbv = config_.getServerBlocks();
@@ -311,6 +312,9 @@ void Connection::setConfigInfo() {
       }
     }
   }
+  if (selected_server_ == NULL) {
+    selected_server_ = &sbv[0];
+  } 
   const std::string &uri = request_message_.getUri();
   const std::vector<LocationBlock> &lbv = selected_server_->getLocationBlocks();
   std::string extension;
