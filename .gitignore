@@ -25,8 +25,10 @@ webserv
 a.out.dSYM
 Thumbs.db
 .vscode/
+.vscode
 *.sublime-project
 *.sublime-workspace
+log.txt
 
 # Dependency directories
 bin/
