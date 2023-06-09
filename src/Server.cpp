@@ -77,12 +77,14 @@ void Server::run() {
         }
       } else if (filter == EVFILT_READ) {
         if (ptr->readHandler(event_list[i]) == FAIL) {
+          std::cout << "close read" << std::endl;
           eraseConnection(ptr, connections, work_queue);
           break;
         }
         kqueue_.setEvent(id, EVFILT_READ, EV_DISABLE, 0, 0, NULL);
       } else if (filter == EVFILT_WRITE) {
         if (ptr->writeHandler(event_list[i]) == FAIL) {
+          std::cout << "close write" << std::endl;
           eraseConnection(ptr, connections, work_queue);
           break;
         }
@@ -92,19 +94,18 @@ void Server::run() {
         int status = event_list[i].data;
         if ((WIFEXITED(status) && WEXITSTATUS(status) != 0)
             || WIFSIGNALED(status) || ret != id) {
-          std::cout << "close : " << ptr->getConnectionSocket() << std::endl;
-          // ptr->sendError();
-          eraseConnection(ptr, connections, work_queue);
+          ptr->setResponseStatusCode(500);
+          ptr->clearCgiPid();
           break;
         }
-        kqueue_.setEvent(ptr->getPipeReadFd(), EVFILT_READ, EV_ENABLE, 0, 0, NULL);
+        // kqueue_.setEvent(ptr->getPipeReadFd(), EVFILT_READ, EV_ENABLE, 0, 0, NULL);
       }
     }
     for (size_t queue_size = work_queue.size(); queue_size > 0; --queue_size) {
       Connection *connection = work_queue.front();
       work_queue.pop_front();
       if (connection->work() == CONNECTION_CLOSE) {
-        std::cout << "close : " << connection->getConnectionSocket() << std::endl;
+        std::cout << "close he : " << connection->getConnectionSocket() << std::endl;
         eraseConnection(connection, connections, work_queue);
       } else {
         work_queue.push_back(connection);

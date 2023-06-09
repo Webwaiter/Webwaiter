@@ -171,6 +171,9 @@ void ResponseMessage::createHeaderLine(const RequestMessage &request_message, co
   } else {
     headers_["connection"] = "keep-alive"; 
   }
+  if (response_status_code_ != 200) {
+    headers_["connection"] = "close";
+  }
   if (request_headers.find("if-modified-since") != request_headers.end()) {
     setLastModified(request_message, location);
   }

@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include <cstdio>
 #include <queue>
@@ -36,6 +37,7 @@ void Connection::parsingRequestMessage() {
     return;
   }
   read_ = 0;
+  read_cnt_ = 0;
   leftover_data_ = -1;
   updateTime(time_);
   // TODO: 파싱유효성 검사
@@ -133,7 +135,7 @@ bool Connection::isCgi(const std::string &path) {
 }
 
 ReturnState Connection::checkPipeReadDone() {
-  if (leftover_data_ == 0) {
+  if (leftover_data_ == 0 && cgi_pid_ == -1) {
     close(pipe_read_fd_);
     pipe_read_fd_ = -1;
     return SUCCESS;
@@ -144,6 +146,10 @@ ReturnState Connection::checkPipeReadDone() {
 }
 
 void Connection::handlingDynamicPage() {
+  if (response_status_code_ != 200) {
+    handlingStaticPage(config_.getDefaultErrorPage());
+    return;
+  }
   if (checkPipeReadDone() == AGAIN) {
     kqueue_.setEvent(pipe_read_fd_, EVFILT_READ, EV_ENABLE, 0, 0, this);
     return;
@@ -165,25 +171,33 @@ void Connection::handlingStaticPage(const std::string &path) {
   write_buffer_size_ = response_message_.getResponseMessage().size();
   // write event enable & update state
   kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
+  cgi_pid_ = -1;
   state_ = kWritingToSocket;
 }
 
-bool Connection::isTimeOut() {
+ReturnState Connection::checkTimeOut() {
   if (state_ == kReadingFromSocket && read_ == 0) {
      if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
-      return true;
+      return TIMEOUT;
     }
   } else {
      if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
-      return true;
+      return SYSTEM_OVERLOAD;
      }
   }
-  return false;
+  return AGAIN;
 }
 
 ReturnState Connection::work() {
-  if (isTimeOut()){
+  ReturnState time_out = checkTimeOut();
+  if (time_out == TIMEOUT) { 
     return CONNECTION_CLOSE;
+  }
+  if (time_out == SYSTEM_OVERLOAD) {
+    if (cgi_pid_ != -1) {
+      kill(cgi_pid_, SIGKILL);
+    }
+    response_status_code_ = 500;
   }
   switch (state_) {
     case kReadingFromSocket:
@@ -272,6 +286,7 @@ void Connection::writingToSocket() {
   }
   updateTime(time_);
   const std::map<std::string, std::string> &response_headers = response_message_.getHeaders();
+  //  TODO: 바꾸는 시점 변경
   if (response_headers.at("connection") == "close") {
     is_connection_close_ = true;
   }
@@ -279,7 +294,7 @@ void Connection::writingToSocket() {
   state_ = kReadingFromSocket;
   kqueue_.setEvent(connection_socket_, EVFILT_READ, EV_ENABLE, 0, 0, this);
 }
-
+   
 void Connection::setConfigInfo() {
   struct sockaddr_in addr;
   socklen_t addrlen = sizeof(addr);
@@ -481,4 +496,12 @@ void Connection::clear() {
 
 int Connection::getPipeReadFd() const {
   return pipe_read_fd_;
+}
+
+void Connection::setResponseStatusCode(int response_status_code) {
+  response_status_code_ = response_status_code;
+}
+
+void Connection::clearCgiPid() {
+  cgi_pid_ = -1;
 }
