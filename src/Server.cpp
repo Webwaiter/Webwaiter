@@ -95,13 +95,12 @@ void Server::run() {
       } else if (filter == EVFILT_PROC) {   
         int ret = waitpid(id, NULL, 0);
         int status = event_list[i].data;
+        ptr->clearCgiPid();
         if ((WIFEXITED(status) && WEXITSTATUS(status) != 0)
             || WIFSIGNALED(status) || ret != id) {
           ptr->setResponseStatusCode(500);
-          ptr->clearCgiPid();
           break;
         }
-        // kqueue_.setEvent(ptr->getPipeReadFd(), EVFILT_READ, EV_ENABLE, 0, 0, NULL);
       }
     }
     for (size_t queue_size = work_queue.size(); queue_size > 0; --queue_size) {
