@@ -110,7 +110,6 @@ void RequestMessage::parseUri() {
 
   uri_.insert(uri_.begin(), leftover_.begin(), space_pos);
   leftover_.erase(leftover_.begin(), space_pos + 1);
-  // Todo: uri 분석
   state_ = kProtocol;
 }
 
