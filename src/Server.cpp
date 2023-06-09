@@ -12,6 +12,7 @@
 #include <deque>
 #include <fstream>
 #include <set>
+#include <exception>
 
 #include "src/Config.hpp"
 #include "src/Connection.hpp"
@@ -106,11 +107,16 @@ void Server::run() {
     for (size_t queue_size = work_queue.size(); queue_size > 0; --queue_size) {
       Connection *connection = work_queue.front();
       work_queue.pop_front();
-      if (connection->work() == CONNECTION_CLOSE) {
-        log_ << "close: " << connection->getConnectionSocket() << std::endl;
+      try {
+        if (connection->work() == CONNECTION_CLOSE) {
+          log_ << "close: " << connection->getConnectionSocket() << std::endl;
+          eraseConnection(connection, connections, work_queue);
+        } else {
+          work_queue.push_back(connection);
+        }
+      } catch(std::exception &e) {
+        log_ << e.what() << std::endl;
         eraseConnection(connection, connections, work_queue);
-      } else {
-        work_queue.push_back(connection);
       }
     }
   }

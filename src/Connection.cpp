@@ -14,6 +14,8 @@
 #include <set>
 #include <string>
 #include <algorithm>
+#include <exception>
+#include <stdexcept>
 
 #include "src/Config.hpp"
 #include "src/LocationBlock.hpp"
@@ -108,7 +110,7 @@ std::string Connection::directoryListing(const std::string &path) {
   std::ofstream directory_list("docs/listing.txt");
   DIR *path_dir = opendir(path.c_str());
   if (path_dir == NULL) {
-    throw FAIL;
+    throw std::runtime_error("dir error");
   }
   
   struct dirent *file = NULL;
@@ -310,6 +312,9 @@ void Connection::setConfigInfo() {
       }
     }
   }
+  if (selected_server_ == NULL) {
+    selected_server_ = &sbv[0];
+  } 
   const std::string &uri = request_message_.getUri();
   const std::vector<LocationBlock> &lbv = selected_server_->getLocationBlocks();
   std::string extension;
