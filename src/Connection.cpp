@@ -40,19 +40,16 @@ void Connection::parsingRequestMessage() {
   read_cnt_ = 0;
   leftover_data_ = -1;
   updateTime(time_);
-  // TODO: 파싱유효성 검사
   if (response_status_code_ == 200) {
     setConfigInfo();
   }
   if (response_status_code_ == 200) {
     request_message_.checkOverMaxClientBodySize(selected_server_);
   }
-  // TODO: allowed method 검사
   if (response_status_code_ == 200) {
     checkAllowedMethod();
   }
   std::string path = createPagePath();
-  // TODO: extension 확인 후 CGI 혹은 static page 처리
   if (isCgi(path)) {
     executeCgiProcess(path);
   } else {
@@ -286,7 +283,6 @@ void Connection::writingToSocket() {
   }
   updateTime(time_);
   const std::map<std::string, std::string> &response_headers = response_message_.getHeaders();
-  //  TODO: 바꾸는 시점 변경
   if (response_headers.at("connection") == "close") {
     is_connection_close_ = true;
   }
@@ -354,11 +350,6 @@ static std::string getQueryString(std::string &uri) {
   return query_pos == std::string::npos ? "" : uri.substr(query_pos + 1);
 }
 
-// static std::string getScriptName(const std::string &uri, const std::string &extention) {
-//   size_t dot_pos = uri.find("." + extention);
-//   return uri.substr(0, dot_pos + extention.size() + 1);
-// }
-
 static std::string getScriptName(const std::string &path, const LocationBlock &location_block) {
   std::string root = location_block.getRootDir();  
   return path.substr(root.length() + 1);
@@ -382,8 +373,6 @@ char **Connection::setMetaVariables(std::map<std::string, std::string> &env, con
   env["REMOTE_IDENT"] = "";
   env["REMOTE_USER"] = "";
   env["REMOTE_HOST"] = env["REMOTE_ADDR"];
-  // env["SCRIPT_NAME"] = getScriptName(env["REQUEST_URI"], selected_location_->getCgiExtension());
-  // env["SCRIPT_FILENAME"] = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
   env["SCRIPT_NAME"] = getScriptName(path, *selected_location_);
   env["SCRIPT_FILENAME"] = path;
   env["PATH_INFO"] = env["SCRIPT_FILENAME"];

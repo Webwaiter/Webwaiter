@@ -101,7 +101,6 @@ void Server::run() {
           ptr->clearCgiPid();
           break;
         }
-        // kqueue_.setEvent(ptr->getPipeReadFd(), EVFILT_READ, EV_ENABLE, 0, 0, NULL);
       }
     }
     for (size_t queue_size = work_queue.size(); queue_size > 0; --queue_size) {
