@@ -431,13 +431,13 @@ void Connection::executeCgiProcess(const std::string &path) {
     }
     if (to_cgi[0] != STDIN_FILENO) {
       if (dup2(to_cgi[0], STDIN_FILENO) != STDIN_FILENO) {
-        is_connection_close_ = true;
+        exit(1);
       }
       close(to_cgi[0]);
     }
     if (from_cgi[1] != STDOUT_FILENO) {
       if (dup2(from_cgi[1], STDOUT_FILENO) != STDOUT_FILENO) {
-        is_connection_close_ = true;
+        exit(1);
       }
       close(from_cgi[1]);
     }
@@ -450,7 +450,7 @@ void Connection::executeCgiProcess(const std::string &path) {
     char **meta_variables = setMetaVariables(env, path);
     char **cgi_argv = setCgiArguments(selected_location_->getCgiPath(), env["SCRIPT_FILENAME"]);
     if (execve(cgi_argv[0], cgi_argv, meta_variables) < 0) {
-      is_connection_close_ = true;
+      exit(1);
     }
   }
 
@@ -476,6 +476,7 @@ void Connection::executeCgiProcess(const std::string &path) {
   } else {
     close(pipe_write_fd_);
     pipe_write_fd_ = -1;
+    kqueue_.setEvent(pipe_read_fd_, EVFILT_READ, EV_ENABLE, 0, 0, NULL);
     state_ = kReadingFromPipe;
   }
 }
