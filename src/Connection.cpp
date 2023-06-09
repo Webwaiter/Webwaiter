@@ -295,8 +295,7 @@ void Connection::setConfigInfo() {
   struct sockaddr_in addr;
   socklen_t addrlen = sizeof(addr);
   getsockname(connection_socket_, reinterpret_cast<struct sockaddr *>(&addr), &addrlen);
-  // const std::string &server_ip = changeBinaryToIp(addr.sin_addr);
-  const std::string &server_ip = "0.0.0.0";
+  const std::string &server_ip = changeBinaryToIp(addr.sin_addr);
   const std::string &server_port = numberToString(ntohs(addr.sin_port));
   const std::string &server_name = request_message_.getHeaders().at("host");
   const std::vector<ServerBlock> &sbv = config_.getServerBlocks();
