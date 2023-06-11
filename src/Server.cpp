@@ -66,6 +66,9 @@ void Server::run() {
   struct kevent event_list[10];
   while (1) {
     int detected_cnt = kevent(kqueue_.fd_, NULL, 0, event_list, 10, &timeout);
+    if (detected_cnt == -1) {
+      log_ << "kevent error: " << std::strerror(errno) << std::endl;
+    }
     for (int i = 0; i < detected_cnt; ++i) {
       int id = event_list[i].ident;
       int filter = event_list[i].filter;
