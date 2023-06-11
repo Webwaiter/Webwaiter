@@ -33,7 +33,11 @@ int Connection::getConnectionSocket() const {
   return connection_socket_;
 }
 
-void Connection::parsingRequestMessage() {
+void Connection::parsingRequestMessage(ReturnState time_out) {
+  if (time_out != AGAIN) {
+    handlingStaticPage(config_.getDefaultErrorPage());
+    return;
+  }
   if (request_message_.parse(read_buffer_, read_) == AGAIN) {
     kqueue_.setEvent(connection_socket_, EVFILT_READ, EV_ENABLE, 0, 0, this);
     return;
@@ -144,8 +148,8 @@ ReturnState Connection::checkPipeReadDone() {
   return AGAIN;
 }
 
-void Connection::handlingDynamicPage() {
-  if (response_status_code_ != 200) {
+void Connection::handlingDynamicPage(ReturnState time_out) {
+  if (time_out != AGAIN) {
     handlingStaticPage(config_.getDefaultErrorPage());
     return;
   }
@@ -200,16 +204,16 @@ ReturnState Connection::work() {
   }
   switch (state_) {
     case kReadingFromSocket:
-      parsingRequestMessage();
+      parsingRequestMessage(time_out);
       break;
     case kWritingToPipe:
-      writingToPipe();
+      writingToPipe(time_out);
       break;
     case kReadingFromPipe:
-      handlingDynamicPage();
+      handlingDynamicPage(time_out);
       break;
     case kWritingToSocket:
-      writingToSocket();
+      writingToSocket(time_out);
       break;
   }
   if (is_connection_close_) {
@@ -264,7 +268,12 @@ void Connection::closeConnection() {
   }
 }
 
-void Connection::writingToPipe() {
+void Connection::writingToPipe(ReturnState time_out) {
+  if (time_out != AGAIN) {
+    written_ = 0;
+    handlingStaticPage(config_.getDefaultErrorPage());
+    return;
+  }
   if (static_cast<size_t>(written_) < write_buffer_size_) {
     kqueue_.setEvent(pipe_write_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
     return;
@@ -278,7 +287,11 @@ void Connection::writingToPipe() {
   state_ = kReadingFromPipe;
 }
 
-void Connection::writingToSocket() {
+void Connection::writingToSocket(ReturnState time_out) {
+  if (time_out != AGAIN) {
+    is_connection_close_ = true;
+    return;
+  }
   if (static_cast<size_t>(written_) < write_buffer_size_) {
     kqueue_.setEvent(connection_socket_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
     return;
