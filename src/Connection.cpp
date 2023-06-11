@@ -225,7 +225,7 @@ ReturnState Connection::work() {
 ReturnState Connection::writeHandler(const struct kevent &event) {
   // socket에 응답 메세지를 쓰는 도중 client가 강제로 커넥션을 끊었을 때
   // post의 경우 request 본문을 pipe에 쓰는 도중에 cgi 프로세스가 종료되었을 때
-  if (event.flags == EV_EOF) {
+  if (event.flags == EV_EOF || event.flags == EV_ERROR) {
     return FAIL;
   }
   ssize_t ret = write(event.ident, write_buffer_ + written_, write_buffer_size_ - written_);
@@ -241,7 +241,7 @@ ReturnState Connection::writeHandler(const struct kevent &event) {
 ReturnState Connection::readHandler(const struct kevent &event) {
   // client가 강제로 커넥션을 끊었을 때
   // cgi프로세스가 출력을 만드는 중간에 강제로 종료되었을 때
-  if (event.flags == EV_EOF) {
+  if (event.flags == EV_EOF || event.flags == EV_ERROR) {
     return FAIL;
   }
   leftover_data_ = event.data;
