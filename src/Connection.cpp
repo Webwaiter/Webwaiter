@@ -27,7 +27,7 @@ Connection::Connection(int connection_socket, Kqueue& kqueue, const Config& conf
       response_status_code_(200), kqueue_(kqueue), config_(config), read_(0), read_cnt_(0), leftover_data_(-1),
       write_buffer_(NULL), written_(0), write_buffer_size_(0), request_message_(response_status_code_),
       response_message_(response_status_code_, config_, kqueue_), selected_server_(NULL), selected_location_(NULL), time_(time(NULL)),
-      is_connection_close_(false), cgi_pid_(-1) {}
+      is_connection_close_(false), state_(kReadingFromSocket), cgi_pid_(-1) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
