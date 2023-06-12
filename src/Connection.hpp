@@ -35,13 +35,13 @@ class Connection {
   void checkAllowedMethod();
   std::string createPagePath();
   std::string directoryListing(const std::string &path);
-  void parsingRequestMessage();
+  void parsingRequestMessage(ReturnState time_out);
   void handlingStaticPage(const std::string &path);
-  void handlingDynamicPage();
-  void writingToSocket();
+  void handlingDynamicPage(ReturnState time_out);
+  void writingToSocket(ReturnState time_out);
   void executeCgiProcess(const std::string &path);
   void openStaticPage();
-  void writingToPipe();
+  void writingToPipe(ReturnState time_out);
   ReturnState writeHandler(const struct kevent &event);
   ReturnState readHandler(const struct kevent &event);
   void closeConnection();
