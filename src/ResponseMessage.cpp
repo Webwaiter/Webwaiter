@@ -149,6 +149,9 @@ void ResponseMessage::setAllowed(const LocationBlock &location) {
 }
 
 std::string ResponseMessage::findMimeType(const std::string &path) {
+  if (!isResponseOk(response_status_code_)) {
+    return "text/html";
+  }
   size_t pos = path.find_last_of('.');
   if (pos == std::string::npos) {
     return "text/plain";
@@ -171,7 +174,7 @@ void ResponseMessage::createHeaderLine(const RequestMessage &request_message, co
   } else {
     headers_["connection"] = "keep-alive"; 
   }
-  if (response_status_code_ != 200) {
+  if (!isResponseOk(response_status_code_)) {
     headers_["connection"] = "close";
   }
   if (request_headers.find("if-modified-since") != request_headers.end()) {
@@ -186,8 +189,9 @@ void ResponseMessage::createHeaderLine(const RequestMessage &request_message, co
    
   if (body_.size() != 0) {
     headers_["content-length"] = numberToString(body_.size());
-    if (headers_.find("content-type") == headers_.end())
+    if (headers_.find("content-type") == headers_.end()) {
       headers_["content-type"] = findMimeType(path);
+    }
   }
 
   for (std::map<std::string, std::string>::iterator it = headers_.begin(); it != headers_.end(); ++it) {

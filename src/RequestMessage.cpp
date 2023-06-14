@@ -315,7 +315,7 @@ void RequestMessage::removeChunkedInHeader() {
 }
 
 void RequestMessage::validation() {
-  if (response_status_code_ != 200) {
+  if (!isResponseOk(response_status_code_)) {
     return;
   }
   if (headers_.find("host") == headers_.end()) {

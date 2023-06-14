@@ -61,13 +61,13 @@ void Connection::parsingRequestMessage(ReturnState time_out) {
   read_cnt_ = 0;
   leftover_data_ = -1;
   updateTime(time_);
-  if (response_status_code_ == 200) {
+  if (isResponseOk(response_status_code_)) {
     setConfigInfo();
   }
-  if (response_status_code_ == 200) {
+  if (isResponseOk(response_status_code_)) {
     request_message_.checkOverMaxClientBodySize(selected_server_);
   }
-  if (response_status_code_ == 200) {
+  if (isResponseOk(response_status_code_)) {
     checkAllowedMethod();
   }
   std::string path = createPagePath();
@@ -90,7 +90,7 @@ std::string Connection::createPagePath() {
   // status code가  200이 아니라면 default page path를 반환해야 한다.
   std::string path = "";
   std::string default_error_page = config_.getDefaultErrorPage();
-  if (response_status_code_ != 200) {
+  if (!isResponseOk(response_status_code_)) {
     if (response_status_code_ >= 300 & response_status_code_ <= 399) {
       return path;
     }
@@ -103,9 +103,10 @@ std::string Connection::createPagePath() {
 
   if (request_message_.getMethod() == "DELETE") {
     if (deleteFile(path)) {
+      response_status_code_ = 204;
       return path;
     } else {
-      response_status_code_ = 404;
+      response_status_code_ = 400;
       return default_error_page;
     }
   }

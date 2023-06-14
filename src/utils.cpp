@@ -79,7 +79,7 @@ void toLower(char &c) {
 }
 
 bool deleteFile(const std::string &path) {
-  if (unlink(path.c_str()) == 0) {
+  if (std::remove(path.c_str()) == 0) {
     return true;
   }
   return false;
@@ -93,4 +93,11 @@ bool isDirectory(const std::string &path) {
     closedir(dir);
     return true;
   }
+}
+
+bool isResponseOk(int status_code) {
+  if (status_code >= 200 && status_code < 300) {
+    return true;
+  }
+  return false;
 }

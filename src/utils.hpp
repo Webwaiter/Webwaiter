@@ -38,6 +38,8 @@ std::string changeBinaryToIp(in_addr binary);
 void toLower(char &c);
 bool deleteFile(const std::string &path);
 bool isDirectory(const std::string &path);
+bool isResponseOk(int status_code);
+
 template <typename T>
 std::string numberToString(T number) {
   std::stringstream ss;
