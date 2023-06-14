@@ -22,12 +22,27 @@
 #include "src/Server.hpp"
 #include "src/utils.hpp"
 
-Connection::Connection(int connection_socket, Kqueue& kqueue, const Config& config)
-    : connection_socket_(connection_socket), pipe_read_fd_(-1), pipe_write_fd_(-1),
-      response_status_code_(200), kqueue_(kqueue), config_(config), read_(0), read_cnt_(0), leftover_data_(-1),
-      write_buffer_(NULL), written_(0), write_buffer_size_(0), request_message_(response_status_code_),
-      response_message_(response_status_code_, config_, kqueue_), selected_server_(NULL), selected_location_(NULL), time_(time(NULL)),
-      is_connection_close_(false), state_(kReadingFromSocket), cgi_pid_(-1) {}
+Connection::Connection(int connection_socket, Kqueue &kqueue, const Config &config)
+    : connection_socket_(connection_socket),
+      pipe_read_fd_(-1),
+      pipe_write_fd_(-1),
+      response_status_code_(200),
+      kqueue_(kqueue),
+      config_(config),
+      read_(0),
+      read_cnt_(0),
+      leftover_data_(-1),
+      write_buffer_(NULL),
+      written_(0),
+      write_buffer_size_(0),
+      request_message_(response_status_code_),
+      response_message_(response_status_code_, config_, kqueue_),
+      selected_server_(NULL),
+      selected_location_(NULL),
+      time_(time(NULL)),
+      is_connection_close_(false),
+      state_(kReadingFromSocket),
+      cgi_pid_(-1) {}
 
 int Connection::getConnectionSocket() const {
   return connection_socket_;
@@ -83,7 +98,7 @@ std::string Connection::createPagePath() {
   }
 
   path += selected_location_->getRootDir();
-  path += "/"; 
+  path += "/";
   path += request_message_.getResourcePath();
 
   if (request_message_.getMethod() == "DELETE") {
@@ -105,7 +120,7 @@ std::string Connection::createPagePath() {
     }
   } else if (access(path.c_str(), R_OK | F_OK) != -1) {
     return path;
-  } 
+  }
   response_status_code_ = 404;
   return default_error_page;
 }
@@ -116,10 +131,10 @@ std::string Connection::directoryListing(const std::string &path) {
   if (path_dir == NULL) {
     throw std::runtime_error("dir error");
   }
-  
+
   struct dirent *file = NULL;
   while ((file = readdir(path_dir)) != NULL) {
-    directory_list << file->d_name << std::endl;  
+    directory_list << file->d_name << std::endl;
   }
   closedir(path_dir);
   response_status_code_ = 404;
@@ -144,7 +159,7 @@ ReturnState Connection::checkPipeReadDone() {
     return SUCCESS;
   }
   response_message_.appendReadBufferToLeftoverBuffer(read_buffer_, read_);
-  read_= 0;
+  read_ = 0;
   return AGAIN;
 }
 
@@ -180,20 +195,20 @@ void Connection::handlingStaticPage(const std::string &path) {
 
 ReturnState Connection::checkTimeOut() {
   if (state_ == kReadingFromSocket && read_ == 0) {
-     if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
+    if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
       return TIMEOUT;
     }
   } else {
-     if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
+    if (getTimeOut(time_) >= static_cast<double>(config_.getTimeout())) {
       return SYSTEM_OVERLOAD;
-     }
+    }
   }
   return AGAIN;
 }
 
 ReturnState Connection::work() {
   ReturnState time_out = checkTimeOut();
-  if (time_out == TIMEOUT) { 
+  if (time_out == TIMEOUT) {
     return CONNECTION_CLOSE;
   }
   if (time_out == SYSTEM_OVERLOAD) {
@@ -305,7 +320,7 @@ void Connection::writingToSocket(ReturnState time_out) {
   state_ = kReadingFromSocket;
   kqueue_.setEvent(connection_socket_, EVFILT_READ, EV_ENABLE, 0, 0, this);
 }
-   
+
 void Connection::setConfigInfo() {
   struct sockaddr_in addr;
   socklen_t addrlen = sizeof(addr);
@@ -315,6 +330,15 @@ void Connection::setConfigInfo() {
   const std::string &server_name = request_message_.getHeaders().at("host");
   const std::vector<ServerBlock> &sbv = config_.getServerBlocks();
   for (size_t i = 0; i < sbv.size(); ++i) {
+    if (sbv[i].getServerIP() == "0.0.0.0") {
+      if (sbv[i].getServerName() == server_name) {
+        selected_server_ = &sbv[i];
+        break;
+      }
+      if (selected_server_ == NULL) {
+        selected_server_ = &sbv[i];
+      }
+    }
     if (sbv[i].getServerIP() == server_ip && sbv[i].getServerPort() == server_port) {
       if (sbv[i].getServerName() == server_name) {
         selected_server_ = &sbv[i];
@@ -327,7 +351,7 @@ void Connection::setConfigInfo() {
   }
   if (selected_server_ == NULL) {
     selected_server_ = &sbv[0];
-  } 
+  }
   const std::string &uri = request_message_.getUri();
   const std::vector<LocationBlock> &lbv = selected_server_->getLocationBlocks();
   std::string extension;
@@ -335,7 +359,7 @@ void Connection::setConfigInfo() {
   if (dot_pos != std::string::npos) {
     size_t extension_end = uri.find_first_of("/?", dot_pos);
     extension = extension_end == std::string::npos ?
-      uri.substr(dot_pos + 1) : uri.substr(dot_pos + 1, extension_end - dot_pos - 1);
+                uri.substr(dot_pos + 1) : uri.substr(dot_pos + 1, extension_end - dot_pos - 1);
   }
   std::vector<std::string> uri_tokens = split(uri, "/");
   ssize_t max_match_count = -1;
@@ -368,7 +392,7 @@ static std::string getQueryString(std::string &uri) {
 }
 
 static std::string getScriptName(const std::string &path, const LocationBlock &location_block) {
-  std::string root = location_block.getRootDir();  
+  std::string root = location_block.getRootDir();
   return path.substr(root.length() + 1);
 }
 
@@ -395,7 +419,7 @@ char **Connection::setMetaVariables(std::map<std::string, std::string> &env, con
   env["PATH_INFO"] = env["SCRIPT_FILENAME"];
   env["PATH_TRANSLATED"] = env["PATH_INFO"];
   int n = env.size();
-  char **meta_variables = new char*[n + 1];
+  char **meta_variables = new char *[n + 1];
   int i = 0;
   for (std::map<std::string, std::string>::iterator it = env.begin();
        it != env.end(); ++it) {
@@ -409,7 +433,7 @@ char **Connection::setMetaVariables(std::map<std::string, std::string> &env, con
 }
 
 static char **setCgiArguments(const std::string &cgi_path, std::string &script_filename) {
-  char** argv = new char*[3];
+  char **argv = new char *[3];
   argv[0] = new char[cgi_path.size() + 1];
   std::strcpy(argv[0], cgi_path.c_str());
   argv[1] = new char[script_filename.size() + 1];
@@ -433,7 +457,7 @@ void Connection::executeCgiProcess(const std::string &path) {
   if (pid == 0) {
     // plumbing
     if (signal(SIGPIPE, SIG_DFL) == SIG_ERR) {
-        exit(1);
+      exit(1);
     }
     if (to_cgi[0] != STDIN_FILENO) {
       if (dup2(to_cgi[0], STDIN_FILENO) != STDIN_FILENO) {

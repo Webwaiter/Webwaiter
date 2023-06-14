@@ -41,8 +41,7 @@ static void setupListenSocket(Config &config, std::vector<int> &listen_sockets) 
       if (errno == EADDRINUSE) {
         close(listen_socket);
         continue;
-      }
-      else {
+      } else {
         std::perror("bind() error");
         exit(1);
       }
@@ -68,19 +67,20 @@ int main(int argc, char *argv[]) {
       config_path = argv[1];
     }
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+      std::perror("signal() error");
       return 1;
     }
     Config config(config_path.c_str());
     std::vector<int> listen_socket;
     setupListenSocket(config, listen_socket);
     if (listen_socket.size() == 0) {
-      log << "nothing to listen\n";
+      std::cerr << "listen error: nothing to listen" << std::endl;
       return 1;
     }
     Server server(config, listen_socket, log);
     server.run();
   } catch (ReturnState) {
-    log << "error in config file\n";
+    std::cerr << "parsing error: error in config file" << std::endl;
     return 1;
   }
   return 0;
